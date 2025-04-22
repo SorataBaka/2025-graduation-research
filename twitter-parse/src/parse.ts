@@ -63,12 +63,13 @@ export default class ParseClass {
 				waitUntil: "networkidle2",
 			}
 		);
-		await this.page.waitForSelector(
-			"#react-root > div > div > div.css-175oi2r.r-1f2l425.r-13qz1uu.r-417010.r-18u37iz > main > div > div > div > div > div > div:nth-child(3) > section > div > div",
-			{
-				timeout: 10000,
-			}
-		);
+		await this.page.waitForSelector('[aria-label="Timeline: Cari timeline"]', {
+			timeout: 10000,
+		});
+		await new Promise((res) => {
+			consola.warn("Waiting for full load");
+			setTimeout(res, 2000);
+		});
 		consola.success("Opened search timeline");
 
 		return this;
@@ -83,12 +84,13 @@ export default class ParseClass {
 				});
 			});
 			const container = document.querySelector(
-				"#react-root > div > div > div.css-175oi2r.r-1f2l425.r-13qz1uu.r-417010.r-18u37iz > main > div > div > div > div > div > div:nth-child(3) > section > div > div"
+				'[aria-label="Timeline: Cari timeline"] > div'
 			);
-			if (!container) throw new Error("Element not found");
+			if (container == null) throw new Error("Element not found");
 			observer.observe(container, {
 				childList: true,
 			});
+			console.log(container);
 
 			while (true) {
 				window.scrollBy(0, 100);
