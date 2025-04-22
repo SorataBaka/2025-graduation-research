@@ -1,0 +1,38 @@
+{
+	"name": "twitter-parse",
+	"version": "0.0.1",
+	"description": "Twitter feeds parser using puppeteer",
+	"main": "build/index.js",
+	"scripts": {
+		"start": "node build/index.js",
+		"build": "tsc",
+		"watch:build": "tsc -w",
+		"watch:start": "npx nodemon"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/SorataBaka/2025-graduation-research.git"
+	},
+	"keywords": [
+		"research",
+		"NLP"
+	],
+	"author": "Christian Harjuno (SorataBaka)",
+	"license": "UNLICENSED",
+	"bugs": {
+		"url": "https://github.com/SorataBaka/2025-graduation-research/issues"
+	},
+	"homepage": "https://github.com/SorataBaka/2025-graduation-research#readme",
+	"dependencies": {
+		"dotenv": "^16.5.0",
+		"express": "^5.1.0",
+		"puppeteer": "^24.6.1",
+		"puppeteer-extra": "^3.3.6",
+		"puppeteer-extra-plugin-stealth": "^2.11.2"
+	},
+	"devDependencies": {
+		"@types/express": "^5.0.1",
+		"consola": "^3.4.2",
+		"nodemon": "^3.1.9"
+	}
+}
