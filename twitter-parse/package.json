@@ -26,6 +26,7 @@
 	"dependencies": {
 		"dotenv": "^16.5.0",
 		"express": "^5.1.0",
+		"mongoose": "^8.13.2",
 		"puppeteer": "^24.6.1",
 		"puppeteer-extra": "^3.3.6",
 		"puppeteer-extra-plugin-stealth": "^2.11.2"

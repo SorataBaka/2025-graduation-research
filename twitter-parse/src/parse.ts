@@ -76,7 +76,7 @@ export default class ParseClass {
 
 	public async observe() {
 		if (this.page === undefined) throw new Error("Page is still undefined");
-		await this.page.evaluate(() => {
+		await this.page.evaluate(async () => {
 			const observer = new MutationObserver((mutations) => {
 				mutations.forEach((mutation) => {
 					if (mutation.addedNodes.length > 0) console.log(mutation.addedNodes);
@@ -88,8 +88,12 @@ export default class ParseClass {
 			if (!container) throw new Error("Element not found");
 			observer.observe(container, {
 				childList: true,
-				subtree: true,
 			});
+
+			while (true) {
+				window.scrollBy(0, 100);
+				await new Promise((res) => setTimeout(res, 200));
+			}
 		});
 	}
 }
