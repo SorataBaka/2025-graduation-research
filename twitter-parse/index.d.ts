@@ -11,3 +11,22 @@ export interface Cookie {
 	value: string;
 	id: number;
 }
+
+export interface DefaultResponse<DataType> {
+	status: number;
+	message: string;
+	code: string;
+	data: DataType;
+}
+export interface ErrorResponse<Error> {
+	status: number;
+	message: string;
+	code: string;
+	error: Error;
+}
+
+export interface NotFoundResponse {
+	status: number;
+	message: string;
+	code: string;
+}

@@ -7,6 +7,7 @@ export default class ParseClass {
 	private page: Page | undefined;
 	private cookies: Cookie[] | undefined;
 	private cookiePath: string;
+	private static activeClass: ParseClass;
 
 	constructor(browser: Browser, cookiePath: string) {
 		this.cookiePath = cookiePath;
@@ -20,6 +21,7 @@ export default class ParseClass {
 		for (const cookie of this.cookies) {
 			this.browser.setCookie(cookie);
 		}
+		ParseClass.activeClass = this;
 	}
 	public static async initialize(cookiePath: string): Promise<ParseClass> {
 		return new ParseClass(
@@ -80,7 +82,23 @@ export default class ParseClass {
 		await this.page.evaluate(async () => {
 			const observer = new MutationObserver((mutations) => {
 				mutations.forEach((mutation) => {
-					if (mutation.addedNodes.length > 0) console.log(mutation.addedNodes);
+					if (mutation.addedNodes.length == 0) return;
+					mutation.addedNodes.forEach((node) => {
+						if (node.nodeType !== Node.ELEMENT_NODE) return;
+						const elementNode = node as HTMLElement;
+						const insideContent = elementNode.querySelector(
+							"div > div > article > div div:nth-of-type(2) > div:nth-of-type(2)"
+						);
+						if (!insideContent) return;
+						const author = insideContent.querySelector(
+							"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(1) > a > div > span"
+						)?.textContent;
+						const time = insideContent
+							.querySelector(
+								"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a > time"
+							)
+							?.getAttribute("datetime");
+					});
 				});
 			});
 			const container = document.querySelector(

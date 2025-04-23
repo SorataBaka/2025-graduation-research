@@ -29,6 +29,7 @@ export default class DatabaseClass {
 			})
 			.catch((err) => {
 				consola.error(err);
+				throw err;
 			});
 	}
 	public getConnection(): Connection {

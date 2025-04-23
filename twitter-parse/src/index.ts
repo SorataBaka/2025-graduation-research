@@ -23,6 +23,7 @@ const startup = async () => {
 		await parseClass.observe();
 	} catch (e) {
 		consola.error(e);
+		throw e;
 	}
 };
 startup();

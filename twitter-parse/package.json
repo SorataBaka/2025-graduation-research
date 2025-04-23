@@ -24,8 +24,10 @@
 	},
 	"homepage": "https://github.com/SorataBaka/2025-graduation-research#readme",
 	"dependencies": {
+		"body-parser": "^2.2.0",
 		"dotenv": "^16.5.0",
 		"express": "^5.1.0",
+		"joi": "^17.13.3",
 		"mongoose": "^8.13.2",
 		"morgan": "^1.10.0",
 		"puppeteer": "^24.6.1",
