@@ -1,26 +1,60 @@
 import { Request, Response, NextFunction } from "express";
-import DatabaseClass from "../../../db/init_db";
 import { DefaultResponse } from "../../../..";
 import joi from "joi";
+import PostModel from "../../../db/posts";
 
-const bodyValidator = joi.object({
-	time: joi.string().required(),
-	author: joi.string().required(),
-	content: joi.string().required(),
-	comment_count: joi.number().required(),
-	repost_count: joi.number().required(),
-	like_count: joi.number().required(),
-	view_count: joi.number().required(),
-});
+const bodyValidator = joi.array().items(
+	joi.object({
+		time: joi.string().required(),
+		author: joi.string().required(),
+		content: joi.string().required(),
+		data: joi.string().required(),
+	})
+);
 
 interface BodyInterface {
 	time: string;
 	author: string;
 	content: string;
-	comment_count: number;
-	repost_count: number;
-	like_count: number;
-	view_count: number;
+	data: string;
+}
+
+type MetricKey = "views" | "likes" | "retweets" | "replies" | "bookmarks";
+
+const keywords: Record<string, MetricKey> = {
+	tayangan: "views",
+	suka: "likes",
+	"posting ulang": "retweets",
+	balasan: "replies",
+	markah: "bookmarks",
+};
+
+const multipliers: Record<string, number> = {
+	rb: 1_000,
+	jt: 1_000_000,
+};
+
+function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
+	const result: Partial<Record<MetricKey, number>> = {};
+	const regex = /([\d.,]+)\s*(rb|jt)?\s*([a-z\s]+?)(?=,|$)/gi;
+
+	let match: RegExpExecArray | null;
+	while ((match = regex.exec(text)) !== null) {
+		let num = parseFloat(match[1].replace(",", "."));
+		const unit = match[2]?.toLowerCase();
+		const rawLabel = match[3].trim().toLowerCase();
+		const key = keywords[rawLabel];
+
+		if (unit && multipliers[unit]) {
+			num *= multipliers[unit];
+		}
+
+		if (key) {
+			result[key] = Math.round(num);
+		}
+	}
+
+	return result;
 }
 
 export default async (req: Request, res: Response, next: NextFunction) => {
@@ -29,27 +63,43 @@ export default async (req: Request, res: Response, next: NextFunction) => {
 		const validatedBody = bodyValidator.validate(req.body);
 		if (validatedBody.error) throw validatedBody.error;
 
-		const body = validatedBody.value as BodyInterface;
-		const databaseDocument = new DatabaseClass.postCollection({
-			time: new Date(body.time),
-			author: body.author,
-			content: body.content,
-			comment_count: body.comment_count,
-			like_count: body.like_count,
-			repost_count: body.repost_count,
-			view_count: body.view_count,
-			created_at: Date.now(),
-		});
-		const savedDocument = await databaseDocument.save();
+		const body = validatedBody.value as BodyInterface[];
+
+		const cleaned = [];
+		for (const post of body) {
+			const author = post.author;
+			const time =
+				post.time === "DATEUNDEFINED" ? Date.now() : new Date(post.time);
+			const content = post.content.replace(/@[^\s]+/g, "").trim();
+			if (content.length === 0) continue;
+			if (content.split(" ").length < 4) continue;
+
+			const metrics = parseMetrics(post.data);
+
+			cleaned.push({
+				author: author,
+				time: time,
+				content: content,
+				created_at: Date.now(),
+				comment_count: metrics.replies || 0,
+				like_count: metrics.likes || 0,
+				repost_count: metrics.retweets || 0,
+				view_count: metrics.views || 0,
+			});
+		}
+
+		const writeResult = await PostModel.insertMany(cleaned).catch(() => null);
+		if (writeResult === null) throw new Error("Failed to save");
 
 		res.status(200).json({
 			status: 200,
 			code: "OK",
 			message: "OK",
-			data: savedDocument,
-		} as DefaultResponse<typeof savedDocument>);
+			data: writeResult,
+		} as DefaultResponse<typeof writeResult>);
 		return;
 	} catch (e) {
+		console.error(e);
 		next(e);
 	}
 };

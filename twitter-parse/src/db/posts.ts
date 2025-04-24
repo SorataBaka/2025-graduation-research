@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const schema = new mongoose.Schema({
 	time: {
 		type: Date,
-		required: true,
+		required: false,
 	},
 	author: {
 		type: String,
