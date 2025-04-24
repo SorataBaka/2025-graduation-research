@@ -9,4 +9,4 @@ services:
       MONGO_INITDB_ROOT_USERNAME: mongoroot
       MONGO_INITDB_ROOT_PASSWORD: mongopassword
     volumes:
-      - /data/db
+      - mongodb_data:/data/db
