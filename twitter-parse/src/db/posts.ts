@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const schema = new mongoose.Schema({
 	time: {
 		type: Date,
-		required: true,
+		required: false,
 	},
 	author: {
 		type: String,
@@ -14,19 +14,19 @@ const schema = new mongoose.Schema({
 		required: true,
 	},
 	comment_count: {
-		type: Number,
+		type: String,
 		required: true,
 	},
 	repost_count: {
-		type: Number,
+		type: String,
 		required: true,
 	},
 	like_count: {
-		type: Number,
+		type: String,
 		required: true,
 	},
 	view_count: {
-		type: Number,
+		type: String,
 		required: true,
 	},
 	created_at: {

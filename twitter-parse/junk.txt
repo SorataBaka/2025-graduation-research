@@ -1,0 +1,51 @@
+	public async observe() {
+		if (this.page === undefined) throw new Error("Page is still undefined");
+		await this.page.evaluate(async () => {
+			const observer = new MutationObserver((mutations) => {
+				mutations.forEach((mutation) => {
+					if (mutation.addedNodes.length == 0) return;
+					mutation.addedNodes.forEach((node) => {
+						if (node.nodeType !== Node.ELEMENT_NODE) return;
+						const elementNode = node as HTMLElement;
+						const insideContent = elementNode.querySelector(
+							"div > div > article > div div:nth-of-type(2) > div:nth-of-type(2)"
+						);
+						if (!insideContent) return;
+						const author = insideContent.querySelector(
+							"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(1) > a > div > span"
+						)?.textContent;
+						const time = insideContent
+							.querySelector(
+								"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a > time"
+							)
+							?.getAttribute("datetime");
+						const contentSpans =
+							insideContent.children[1].querySelector("div")?.children;
+						if (contentSpans === undefined || contentSpans.length === 0) return;
+						let aggregateContentString = "";
+						for (const span of contentSpans) {
+							aggregateContentString += span.textContent;
+						}
+						const postDataDiv = insideContent.children[
+							insideContent.children.length - 1
+						]
+							.querySelector("div:nth-of-type(1) > div")
+							?.getAttribute("aria-label");
+					});
+				});
+			});
+			const container = document.querySelector(
+				'[aria-label="Timeline: Cari timeline"] > div'
+			);
+			if (container == null) throw new Error("Element not found");
+			observer.observe(container, {
+				childList: true,
+			});
+			console.log(container);
+
+			while (true) {
+				window.scrollBy(0, 100);
+				await new Promise((res) => setTimeout(res, 200));
+			}
+		});
+	}

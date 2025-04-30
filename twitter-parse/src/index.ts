@@ -1,8 +1,10 @@
-import ParseClass from "./parse";
+import ParseClass from "./ParseClass";
 import dotenv from "dotenv";
 import consola from "consola";
-import DatabaseClass from "./db/init_db";
-import initializeAPI from "./api/init_api";
+import InitializeDB from "./db/InitDB";
+import initializeAPI from "./api/InitializeAPI";
+import PostModel from "./db/posts";
+import axios from "axios";
 
 dotenv.config();
 
@@ -13,16 +15,36 @@ const startup = async () => {
 
 		if (URI === undefined) throw new Error("MONGODB_URI is not provided");
 
-		new DatabaseClass(URI);
+		await InitializeDB(URI);
 		initializeAPI(parseInt(PORT, 10));
 
-		const parseClass = await ParseClass.initialize("cookies.json");
+		const latestPull = await PostModel.findOne().sort({ time: 1 });
+		const latestTimePull = latestPull?.time
+			? new Date(latestPull.time)
+			: new Date();
+		console.log(latestTimePull);
+		const year = latestTimePull.getFullYear();
+		const month = latestTimePull.getMonth() + 1;
+		const day = latestTimePull.getDate();
+		console.log(`${year}-${month}-${day}`);
+		const parseClass = await ParseClass.initialize(
+			"cookies.json",
+			`https://x.com/search?f=top&q=RUU%20TNI%20%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20until%3A${year}-${month}-${day}&src=typed_query`,
+			20
+		);
 
-		await parseClass.login();
-		await parseClass.search('RUU TNI "RUU TNI"');
-		await parseClass.observe();
+		await (await parseClass.login()).search();
+
+		while (true) {
+			const data = await parseClass.parse();
+			console.log(data);
+			await axios
+				.post("http://localhost:3000/api/post/create", data)
+				.catch(() => null);
+		}
 	} catch (e) {
 		consola.error(e);
+		throw e;
 	}
 };
 startup();
