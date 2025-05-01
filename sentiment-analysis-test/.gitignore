@@ -173,7 +173,10 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+cache/
+datasets/
 logs/
 pretrained/
-datasets/
-*.keras
+pretrained_model/
+pretrained_tokenizer/
+pretrained_weights/
