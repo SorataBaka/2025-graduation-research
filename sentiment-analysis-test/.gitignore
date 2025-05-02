@@ -176,6 +176,10 @@ cython_debug/
 cache/
 datasets/
 logs/
+assets/
+backup/
+model/
+tokenizer
 pretrained/
 pretrained_model/
 pretrained_tokenizer/
