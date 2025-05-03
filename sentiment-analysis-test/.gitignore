@@ -180,7 +180,5 @@ assets/
 backup/
 model/
 tokenizer
-pretrained/
-pretrained_model/
-pretrained_tokenizer/
-pretrained_weights/
+pretrained_imdb/
+pretrained_sst2/
