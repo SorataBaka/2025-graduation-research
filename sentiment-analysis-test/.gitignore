@@ -182,3 +182,7 @@ model/
 tokenizer
 pretrained_imdb/
 pretrained_sst2/
+pretrained/
+pretrained_model/
+pretrained_tokenizer/
+pretrained_weights/

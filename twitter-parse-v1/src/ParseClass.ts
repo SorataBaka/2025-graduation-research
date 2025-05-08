@@ -14,7 +14,6 @@ export default class ParseClass {
 	private cookiePath: string;
 	private searchQuery: string;
 	private parseOneTimeLimit: number;
-
 	constructor(
 		browser: Browser,
 		cookiePath: string,
@@ -155,7 +154,7 @@ export default class ParseClass {
 					});
 					while (!stop) {
 						window.scrollBy(0, 100);
-						await new Promise((res) => setTimeout(res, 200));
+						await new Promise((res) => setTimeout(res, 500));
 					}
 				});
 			},
@@ -163,5 +162,8 @@ export default class ParseClass {
 		)) as PostRaw[];
 
 		return data;
+	}
+	public setSearchQuery(newQuery: string): void {
+		this.searchQuery = newQuery;
 	}
 }

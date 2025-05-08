@@ -10,3 +10,5 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongopassword
     volumes:
       - mongodb_data:/data/db
+volumes:
+  mongodb_data:
