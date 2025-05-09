@@ -68,12 +68,13 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 		{
 			proxy_username,
 			proxy_password,
-			parse_limit: 2,
-			scroll_delay: 500,
+			parse_limit: 5,
+			scroll_delay: 1000,
+			ratelimit_timeout: 7 * 60 * 1000,
 		}
 	);
 	await parser.authenticate();
-	await parser.navigate();
+	await parser.navigateRecursive();
 	while (true) {
 		const data = await parser.parse();
 		//If the length is 0 it means we have reached the end.
@@ -89,7 +90,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			parser.setSearchURL(
 				`https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${newyear}-${newmonth}-${newday}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query&f=live`
 			);
-			parser.navigate(); // Upon navigation, if query selector could find the div, that means we are being rate limited. We can implement a logic that allows us to restart the process in about 10 minutes.
+			await parser.navigateRecursive();
 			continue;
 		}
 		const cleaned = [];
