@@ -122,9 +122,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 		}).catch((err: any) => {
 			consola.error("Some inserts failed");
 			consola.log("Failed documents: ", err.writeErrors);
-			return null;
+			return [];
 		});
-		if (writeResult === null) throw new Error("Failed to save");
 		consola.success("Successfully pushed: " + writeResult.length);
 	}
 })();
