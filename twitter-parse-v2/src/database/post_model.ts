@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const schema = new mongoose.Schema({
+	tweet_id: {
+		type: String,
+		required: true,
+		unique: true,
+	},
 	time: {
 		type: Date,
 		required: false,

@@ -64,7 +64,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 	const day = initializeTimePull.getDate();
 
 	const parser = await ParseClass.initializeWithOptions(
-		`https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${year}-${month}-${day}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query&f=live`,
+		`https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${year}-${month}-${day}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query`,
 		{
 			proxy_username,
 			proxy_password,
@@ -88,7 +88,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			const newmonth = latesttime.getMonth() + 1;
 			const newday = latesttime.getDate() - 1;
 			parser.setSearchURL(
-				`https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${newyear}-${newmonth}-${newday}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query&f=live`
+				`https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${newyear}-${newmonth}-${newday}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query`
 			);
 			await parser.navigateRecursive();
 			continue;
@@ -105,6 +105,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			const metrics = parseMetrics(post.data);
 
 			cleaned.push({
+				tweet_id: post.id,
 				author: author,
 				time: time,
 				content: content,

@@ -1,0 +1,5 @@
+TO BE SCRAPED:
+https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${newyear}-${newmonth}-${newday}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query
+https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${newyear}-${newmonth}-${newday}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query&f=live
+https://x.com/search?q=(%23TolakRUUTNI)&src=typed_query
+https://x.com/search?q=(%23TolakRUUTNI)&src=typed_query&f=live

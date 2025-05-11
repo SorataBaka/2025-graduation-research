@@ -7,6 +7,7 @@ export interface PostRaw {
 	time: string;
 	content: string;
 	data: string;
+	id: string;
 }
 export interface TwitterParserClassOptions {
 	proxy_username?: string;
@@ -177,6 +178,14 @@ export default class TwitterParserClass {
 									"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(1) > a > div > span"
 								)?.textContent;
 								if (author === null || author === undefined) return;
+								const postid = insideContent
+									.querySelector(
+										"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a"
+									)
+									?.getAttribute("href")
+									?.split("/")
+									.slice(-1)[0] as string;
+
 								const time =
 									insideContent
 										.querySelector(
@@ -206,6 +215,7 @@ export default class TwitterParserClass {
 									time: time,
 									content: content,
 									data: postDataDiv,
+									id: postid,
 								});
 							});
 						});
