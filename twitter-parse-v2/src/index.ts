@@ -52,7 +52,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 	return result;
 }
 function generateURL(year: number, month: number, date: number): string {
-	return `https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${year}-${month}-${date}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query&f=live`;
+	return `https://x.com/search?q=(%23TolakRUUTNI)%20until%3${year}-${month}-${date}&src=typed_query`;
 }
 function checkYear(year: number): void {
 	if (year > 2015) return;
@@ -72,7 +72,7 @@ function checkYear(year: number): void {
 	const day = initializeTimePull.getDate();
 	checkYear(year);
 	const parser = await ParseClass.initializeWithOptions(
-		generateURL(year, month, day),
+		"https://x.com/search?q=(%23TolakRUUTNI)&src=typed_query",
 		{
 			proxy_username,
 			proxy_password,
