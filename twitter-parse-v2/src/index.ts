@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 import consola from "consola";
 import initialize_db from "./database/initialize_db";
-import ParseClass from "./parse_class";
+import ParseClass, { Timeline } from "./parse_class";
 import PostModel from "./database/post_model";
+
 dotenv.config();
 
 const proxy_username = process.env.PROXY_USERNAME || "";
@@ -51,33 +52,46 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 
 	return result;
 }
-function generateURL(year: number, month: number, date: number): string {
-	return `https://x.com/search?q=(%23TolakRUUTNI)%20until%3${year}-${month}-${date}&src=typed_query`;
-}
 function checkYear(year: number): void {
 	if (year > 2015) return;
 	consola.warn("Reached end of expected year. Stopping process...");
 	process.exit(0);
 }
-
 (async () => {
-	await initialize_db(mongodb_uri);
-
-	const initializePull = await PostModel.findOne().sort({ time: 1 });
-	const initializeTimePull = initializePull?.time
-		? new Date(initializePull.time)
-		: new Date();
-	const year = initializeTimePull.getFullYear();
-	const month = initializeTimePull.getMonth() + 1;
-	const day = initializeTimePull.getDate();
-	checkYear(year);
+	await initialize_db(mongodb_uri as string);
 	const parser = await ParseClass.initializeWithOptions(
-		"https://x.com/search?q=(%23TolakRUUTNI)&src=typed_query",
+		ParseClass.generateSearchURL({
+			either: [
+				'"protes"',
+				'"Mahasiswa bergerak"',
+				'"demo mahasiswa"',
+				'"demonstrasi"',
+				'"aksi demo"',
+				'"tuntutan mahasiswa"',
+				'"RUU TNI Jokowi"',
+				'"Tolak revisi RUU TNI"',
+				'"RUU TNI demo"',
+				'"RUU TNI protes"',
+				'"DPR" AND "RUU TNI"',
+				'"DPR RUU TNI"',
+				'"RUU TNI ditolak"',
+				'"Revisi RUU TNI"',
+				'"RUU TNI kontroversial"',
+				'"Tolak RUU TNI"',
+				'"RUU TNI"',
+				'"Indonesia gelap"',
+				'"demo"',
+				'"unjuk rasa"',
+				'"unjukrasa"',
+				'"UU TNI"',
+			],
+			timeline: Timeline.LATEST,
+		}),
 		{
 			proxy_username,
 			proxy_password,
 			parse_limit: 5,
-			scroll_delay: 1000,
+			scroll_delay: 500,
 			ratelimit_timeout: 7 * 60 * 1000,
 		}
 	);
@@ -88,15 +102,44 @@ function checkYear(year: number): void {
 		//If the length is 0 it means we have reached the end.
 		if (data.length === 0) {
 			consola.warn("Reached end of current timeline.");
-			const pullatest = await PostModel.findOne().sort({ time: 1 });
-			const latesttime = pullatest?.time
-				? new Date(pullatest.time)
+			const findLatest = await PostModel.findOne().sort({
+				tweet_id: 1,
+			});
+
+			const latestdate = findLatest?.time
+				? new Date(findLatest.time)
 				: new Date();
-			const newyear = latesttime.getFullYear();
-			const newmonth = latesttime.getMonth() + 1;
-			const newday = latesttime.getDate() - 1;
-			checkYear(newyear);
-			parser.setSearchURL(generateURL(newyear, newmonth, newday));
+
+			parser.setSearchURL(
+				ParseClass.generateSearchURL({
+					either: [
+						'"protes"',
+						'"Mahasiswa bergerak"',
+						'"demo mahasiswa"',
+						'"demonstrasi"',
+						'"aksi demo"',
+						'"tuntutan mahasiswa"',
+						'"RUU TNI Jokowi"',
+						'"Tolak revisi RUU TNI"',
+						'"RUU TNI demo"',
+						'"RUU TNI protes"',
+						'"DPR" AND "RUU TNI"',
+						'"DPR RUU TNI"',
+						'"RUU TNI ditolak"',
+						'"Revisi RUU TNI"',
+						'"RUU TNI kontroversial"',
+						'"Tolak RUU TNI"',
+						'"RUU TNI"',
+						'"Indonesia gelap"',
+						'"demo"',
+						'"unjuk rasa"',
+						'"unjukrasa"',
+						'"UU TNI"',
+					],
+					timeline: Timeline.LATEST,
+					until: latestdate,
+				})
+			);
 			await parser.navigateRecursive();
 			continue;
 		}

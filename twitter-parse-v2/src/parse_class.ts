@@ -2,12 +2,54 @@ import puppeteer, { Browser, Page, Cookie } from "puppeteer";
 import fs from "fs";
 import path, { parse } from "path";
 import consola from "consola";
+import { urlencoded } from "body-parser";
 export interface PostRaw {
 	author: string;
 	time: string;
 	content: string;
 	data: string;
 	id: string;
+}
+export type TwitterFilter =
+	| "media"
+	| "twimg"
+	| "images"
+	| "videos"
+	| "periscope"
+	| "native_video"
+	| "vine"
+	| "consumer_video"
+	| "pro_video"
+	| "verified"
+	| "blue_verified"
+	| "follows"
+	| "social"
+	| "trusted"
+	| "safe"
+	| "news"
+	| "spaces"
+	| "replies"
+	| "retweets"
+	| "nativeretweets"
+	| "quote"
+	| "links";
+export enum Timeline {
+	TOP,
+	LATEST,
+}
+export interface SearchOptions {
+	plaintext?: string;
+	by?: string;
+	replies?: string;
+	mentions?: string;
+	exact?: string;
+	includes?: string[];
+	excludes?: string[];
+	either?: string[];
+	filters?: TwitterFilter[];
+	since?: Date;
+	until?: Date;
+	timeline: Timeline;
 }
 export interface TwitterParserClassOptions {
 	proxy_username?: string;
@@ -256,5 +298,57 @@ export default class TwitterParserClass {
 	}
 	public getRatelimitTimeout(): number {
 		return this.ratelimit_timeout;
+	}
+	public static generateSearchURL(options: SearchOptions): string {
+		if (options.plaintext) {
+			const urlEncoded = encodeURIComponent(options.plaintext);
+			const searchparam = `q=${urlEncoded}`;
+			const urlbuilder = [];
+			urlbuilder.push(searchparam);
+			if (options.timeline == Timeline.LATEST) urlbuilder.push(`f=live`);
+			if (options.timeline == Timeline.TOP) urlbuilder.push(`f=top`);
+			return `https://www.x.com/search?${urlbuilder.join("&")}`;
+		}
+		const querybuilder: string[] = [];
+		if (options.by) querybuilder.push(`from:${options.by}`);
+		if (options.replies) querybuilder.push(`to:${options.replies}`);
+		if (options.mentions) querybuilder.push(`@${options.mentions}`);
+		if (options.exact) querybuilder.push(`"${options.exact}"`);
+		if (Array.isArray(options.includes) && options.includes.length != 0) {
+			for (const words of options.includes) {
+				querybuilder.push(`"${words}"`);
+			}
+		}
+		if (Array.isArray(options.excludes) && options.excludes.length != 0) {
+			for (const words of options.excludes) {
+				querybuilder.push(`-"${words}"`);
+			}
+		}
+		if (Array.isArray(options.either) && options.either.length > 0) {
+			querybuilder.push(`(${options.either.join(" OR ")})`);
+		}
+		if (Array.isArray(options.filters) && options.filters.length > 0) {
+			for (const filter of options.filters) {
+				querybuilder.push(`filter:${filter.toLowerCase()}`);
+			}
+		}
+		if (options.since !== undefined) {
+			const year = options.since.getFullYear();
+			const month = String(options.since.getMonth() + 1).padStart(2, "0");
+			const date = String(options.since.getDate()).padStart(2, "0");
+			querybuilder.push(`since:${year}-${month}-${date}`);
+		}
+		if (options.until !== undefined) {
+			const year = options.until.getFullYear();
+			const month = String(options.until.getMonth() + 1).padStart(2, "0");
+			const date = String(options.until.getDate()).padStart(2, "0");
+			querybuilder.push(`until:${year}-${month}-${date}`);
+		}
+		const fullquery = querybuilder.join(" ");
+		const urlbuilder: string[] = [];
+		urlbuilder.push(`q=${encodeURIComponent(fullquery)}`);
+		if (options.timeline == Timeline.LATEST) urlbuilder.push(`f=live`);
+		if (options.timeline == Timeline.TOP) urlbuilder.push(`f=top`);
+		return `https://www.x.com/search?${urlbuilder.join("&")}`;
 	}
 }
