@@ -7,6 +7,7 @@ export interface PostRaw {
 	time: string;
 	content: string;
 	data: string;
+	id: string;
 }
 export interface TwitterParserClassOptions {
 	proxy_username?: string;
@@ -16,6 +17,7 @@ export interface TwitterParserClassOptions {
 	parse_limit?: number;
 	scroll_delay?: number;
 	scroll_timeout?: number;
+	ratelimit_timeout?: number;
 }
 export default class TwitterParserClass {
 	private browser: Browser;
@@ -28,6 +30,8 @@ export default class TwitterParserClass {
 	private scroll_timeout: number;
 	private search_url: string;
 	private cookies: Cookie[];
+	private ratelimit_timeout: number;
+	private navigate_attempt: number = 0;
 	constructor(
 		browser: Browser,
 		search_url: string,
@@ -36,7 +40,8 @@ export default class TwitterParserClass {
 		cookie_path: string = "cookie.json",
 		parse_limit: number = 10,
 		scroll_delay: number = 1000,
-		scroll_timeout: number = 10000
+		scroll_timeout: number = 10000,
+		ratelimit_timeout: number = 10 * 60 * 1000
 	) {
 		if (new.target !== TwitterParserClass)
 			throw new Error("TwitterParserClass is not callable");
@@ -48,6 +53,7 @@ export default class TwitterParserClass {
 		this.parse_limit = parse_limit;
 		this.scroll_delay = scroll_delay;
 		this.scroll_timeout = scroll_timeout;
+		this.ratelimit_timeout = ratelimit_timeout;
 		this.page = undefined;
 
 		if (!fs.existsSync(path.resolve(this.cookie_path))) {
@@ -75,7 +81,8 @@ export default class TwitterParserClass {
 			options.cookie_path,
 			options.parse_limit,
 			options.scroll_delay,
-			options.scroll_timeout
+			options.scroll_timeout,
+			options.ratelimit_timeout
 		);
 	}
 	public static async initialize(
@@ -124,6 +131,29 @@ export default class TwitterParserClass {
 		consola.success("Loaded timeline");
 		return;
 	}
+	public async navigateRecursive(): Promise<void> {
+		while (true) {
+			try {
+				await this.navigate();
+				break;
+			} catch (error: any) {
+				if (error.name === "TimeoutError") {
+					consola.warn(
+						`Ratelimit detected at attempt ${++this
+							.navigate_attempt}. Retrying in ${
+							this.ratelimit_timeout / 1000 / 60
+						} minutes...`
+					);
+					await new Promise((resolve) =>
+						setTimeout(resolve, this.ratelimit_timeout)
+					);
+				} else {
+					throw error;
+				}
+			}
+		}
+		return;
+	}
 	public async scroll(): Promise<void> {
 		if (this.page === undefined) throw new Error("Page is still undefined");
 		await this.page.evaluate(() => window.scrollBy(0, 100));
@@ -148,6 +178,14 @@ export default class TwitterParserClass {
 									"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(1) > a > div > span"
 								)?.textContent;
 								if (author === null || author === undefined) return;
+								const postid = insideContent
+									.querySelector(
+										"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a"
+									)
+									?.getAttribute("href")
+									?.split("/")
+									.slice(-1)[0] as string;
+
 								const time =
 									insideContent
 										.querySelector(
@@ -177,6 +215,7 @@ export default class TwitterParserClass {
 									time: time,
 									content: content,
 									data: postDataDiv,
+									id: postid,
 								});
 							});
 						});
@@ -214,5 +253,8 @@ export default class TwitterParserClass {
 	}
 	public setSearchURL(url: string): void {
 		this.search_url = url;
+	}
+	public getRatelimitTimeout(): number {
+		return this.ratelimit_timeout;
 	}
 }

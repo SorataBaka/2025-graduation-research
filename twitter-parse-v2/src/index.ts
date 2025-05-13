@@ -51,6 +51,14 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 
 	return result;
 }
+function generateURL(year: number, month: number, date: number): string {
+	return `https://x.com/search?q=(%23TolakRUUTNI)%20until%3${year}-${month}-${date}&src=typed_query`;
+}
+function checkYear(year: number): void {
+	if (year > 2015) return;
+	consola.warn("Reached end of expected year. Stopping process...");
+	process.exit(0);
+}
 
 (async () => {
 	await initialize_db(mongodb_uri);
@@ -62,18 +70,19 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 	const year = initializeTimePull.getFullYear();
 	const month = initializeTimePull.getMonth() + 1;
 	const day = initializeTimePull.getDate();
-
+	checkYear(year);
 	const parser = await ParseClass.initializeWithOptions(
-		`https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${year}-${month}-${day}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query&f=live`,
+		"https://x.com/search?q=(%23TolakRUUTNI)&src=typed_query",
 		{
 			proxy_username,
 			proxy_password,
-			parse_limit: 2,
-			scroll_delay: 500,
+			parse_limit: 5,
+			scroll_delay: 1000,
+			ratelimit_timeout: 7 * 60 * 1000,
 		}
 	);
 	await parser.authenticate();
-	await parser.navigate();
+	await parser.navigateRecursive();
 	while (true) {
 		const data = await parser.parse();
 		//If the length is 0 it means we have reached the end.
@@ -86,10 +95,9 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			const newyear = latesttime.getFullYear();
 			const newmonth = latesttime.getMonth() + 1;
 			const newday = latesttime.getDate() - 1;
-			parser.setSearchURL(
-				`https://x.com/search?q=%22RUU%20TNI%22%20(RUU%20OR%20TNI)%20lang%3Aid%20until%3A${newyear}-${newmonth}-${newday}%20-filter%3Alinks%20-filter%3Areplies&src=typed_query&f=live`
-			);
-			parser.navigate(); // Upon navigation, if query selector could find the div, that means we are being rate limited. We can implement a logic that allows us to restart the process in about 10 minutes.
+			checkYear(newyear);
+			parser.setSearchURL(generateURL(newyear, newmonth, newday));
+			await parser.navigateRecursive();
 			continue;
 		}
 		const cleaned = [];
@@ -104,6 +112,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			const metrics = parseMetrics(post.data);
 
 			cleaned.push({
+				tweet_id: post.id,
 				author: author,
 				time: time,
 				content: content,
@@ -120,9 +129,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 		}).catch((err: any) => {
 			consola.error("Some inserts failed");
 			consola.log("Failed documents: ", err.writeErrors);
-			return null;
+			return [];
 		});
-		if (writeResult === null) throw new Error("Failed to save");
 		consola.success("Successfully pushed: " + writeResult.length);
 	}
 })();
