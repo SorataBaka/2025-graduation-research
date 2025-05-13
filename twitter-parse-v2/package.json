@@ -6,8 +6,8 @@
 	"scripts": {
 		"start": "node build/index.js",
 		"build": "tsc",
-		"watch:build": "tsc -w",
-		"watch:start": "npx nodemon"
+		"build:watch": "tsc -w",
+		"start:watch": "npx nodemon"
 	},
 	"repository": {
 		"type": "git",
