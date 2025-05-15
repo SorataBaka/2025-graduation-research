@@ -3,6 +3,7 @@ import consola from "consola";
 import initialize_db from "./database/initialize_db";
 import ParseClass, { Timeline } from "./parse_class";
 import PostModel from "./database/post_model";
+import LogModel from "./database/log_model";
 
 dotenv.config();
 
@@ -52,16 +53,19 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 
 	return result;
 }
-function checkYear(year: number): void {
-	if (year > 2015) return;
-	consola.warn("Reached end of expected year. Stopping process...");
-	process.exit(0);
-}
 (async () => {
 	await initialize_db(mongodb_uri as string);
+	const latestlog = await LogModel.create({
+		smallest_date: new Date(),
+		started_at: Date.now(),
+	});
+	const log_id = latestlog.id;
+	consola.success("Created new log with id: " + log_id);
 	const parser = await ParseClass.initializeWithOptions(
 		ParseClass.generateSearchURL({
 			either: [
+				"#TolakRUUTNI",
+				"#IndonesiaGelap",
 				'"protes"',
 				'"Mahasiswa bergerak"',
 				'"demo mahasiswa"',
@@ -93,26 +97,28 @@ function checkYear(year: number): void {
 			parse_limit: 5,
 			scroll_delay: 500,
 			ratelimit_timeout: 7 * 60 * 1000,
+			scroll_timeout: 10 * 60 * 60 * 1000,
 		}
 	);
 	await parser.authenticate();
 	await parser.navigateRecursive();
 	while (true) {
 		const data = await parser.parse();
+		consola.success("Acquired " + data.length + " Tweets");
+
 		//If the length is 0 it means we have reached the end.
 		if (data.length === 0) {
 			consola.warn("Reached end of current timeline.");
-			const findLatest = await PostModel.findOne().sort({
-				tweet_id: 1,
-			});
+			const findLatest = await LogModel.findById(log_id);
+			if (!findLatest) throw new Error("Created log is missing");
 
-			const latestdate = findLatest?.time
-				? new Date(findLatest.time)
-				: new Date();
+			const latestdate = findLatest.smallest_date;
 
 			parser.setSearchURL(
 				ParseClass.generateSearchURL({
 					either: [
+						"#TolakRUUTNI",
+						"#IndonesiaGelap",
 						'"protes"',
 						'"Mahasiswa bergerak"',
 						'"demo mahasiswa"',
@@ -144,15 +150,38 @@ function checkYear(year: number): void {
 			continue;
 		}
 		const cleaned = [];
+
+		const currentLog = await LogModel.findById(log_id);
+		if (!currentLog) throw new Error("Created log is missing. Aborting.");
+		const currentSmallestDate = currentLog?.smallest_date;
+
 		for (const post of data) {
 			const author = post.author;
 			const time =
-				post.time === "DATEUNDEFINED" ? Date.now() : new Date(post.time);
+				post.time === "DATEUNDEFINED" ? new Date() : new Date(post.time);
 			const content = post.content.replace(/@[^\s]+/g, "").trim();
 			if (content.length === 0) continue;
-			if (content.split(" ").length < 4) continue;
 
 			const metrics = parseMetrics(post.data);
+			if (time.getUTCDate() < currentSmallestDate.getUTCDate()) {
+				const updatelogquery = await LogModel.findOneAndUpdate(
+					{
+						_id: log_id,
+					},
+					{
+						smallest_date: time,
+					},
+					{
+						upsert: false,
+					}
+				).catch(() => null);
+				if (updatelogquery === null)
+					throw new Error("Failed to update log.. aborting");
+				consola.success(
+					"Successfully updated log with: " +
+						updatelogquery.smallest_date.getUTCDate()
+				);
+			}
 
 			cleaned.push({
 				tweet_id: post.id,
@@ -172,7 +201,7 @@ function checkYear(year: number): void {
 		}).catch((err: any) => {
 			consola.error("Some inserts failed");
 			consola.log("Failed documents: ", err.writeErrors);
-			return [];
+			return err.result?.insertedDocs || [];
 		});
 		consola.success("Successfully pushed: " + writeResult.length);
 	}
