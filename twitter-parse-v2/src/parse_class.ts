@@ -200,7 +200,7 @@ export default class TwitterParserClass {
 		if (this.page === undefined) throw new Error("Page is still undefined");
 		await this.page.evaluate(() => window.scrollBy(0, 100));
 	}
-	private async getPosts(): Promise<PostRaw[]> {
+	public async getPosts(): Promise<PostRaw[]> {
 		if (this.page === undefined) throw new Error("Page is still undefined");
 		return (await this.page.evaluate(
 			(parse_limit, scroll_timeout) => {
@@ -234,28 +234,33 @@ export default class TwitterParserClass {
 											"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a > time"
 										)
 										?.getAttribute("datetime") || "DATEUNDEFINED";
-								const contentSpans =
-									insideContent.children[1].querySelector("div")?.children;
-								if (contentSpans === undefined || contentSpans.length === 0)
-									return;
-								let content = "";
-								for (const span of contentSpans) {
-									content += span.textContent;
+								//First check if its a reply
+								// const contentSpans =
+								// 	insideContent.children[1].querySelector("div")?.children;
+								// if (contentSpans === undefined || contentSpans.length === 0)
+								// 	return;
+								// let content = "";
+								// for (const span of contentSpans) {
+								// 	content += span.textContent;
+								// }
+								// console.log(content);
+								const contentSpans = insideContent.children;
+								let content: string[] = [];
+								for (let i = 1; i < contentSpans.length - 1; i++) {
+									const textContent = contentSpans[i].textContent as string;
+									if (!textContent.match(/^Membalas @/))
+										content.push(contentSpans[i].textContent as string);
 								}
-								if (
-									content === undefined ||
-									content === null ||
-									content.length === 0
-								)
-									return;
+								if (content.length === 0) return;
 								const postDataDiv =
 									insideContent.children[insideContent.children.length - 1]
 										.querySelector("div:nth-of-type(1) > div")
 										?.getAttribute("aria-label") || "";
+								console.log(content.join(""));
 								newData.push({
 									author: author,
 									time: time,
-									content: content,
+									content: content.join(""),
 									data: postDataDiv,
 									id: postid,
 								});
