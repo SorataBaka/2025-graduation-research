@@ -103,8 +103,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 		{
 			proxy_username,
 			proxy_password,
-			parse_limit: 5,
-			scroll_delay: 850,
+			parse_limit: 2,
+			scroll_delay: 750,
 			ratelimit_timeout: 7 * 60 * 1000,
 			scroll_timeout: 10000,
 		}
