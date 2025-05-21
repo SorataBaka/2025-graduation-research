@@ -64,6 +64,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 	const parser = await ParseClass.initializeWithOptions(
 		ParseClass.generateSearchURL({
 			either: [
+				"#RUUTNIPerkuatNKRI",
+				"#RUUTNI",
 				"#TolakRUUTNI",
 				"#IndonesiaGelap",
 				'"protes"',
