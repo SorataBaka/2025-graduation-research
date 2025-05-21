@@ -31,6 +31,10 @@ const multipliers: Record<string, number> = {
 	jt: 1_000_000,
 };
 
+const padNumber = (num: number): string => {
+	return String(num).padStart(3, "0");
+};
+
 const searchParameters = [
 	"#RUUTNIPerkuatNKRI",
 	"#RUUTNI",
@@ -58,8 +62,6 @@ const searchParameters = [
 	'"unjuk rasa"',
 	'"unjukrasa"',
 	'"UU TNI"',
-	'"jokowi"',
-	'"prabowo"',
 	'"dukung tni"',
 ];
 
@@ -135,7 +137,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 
 		const currentLog = await LogModel.findById(log_id);
 		if (!currentLog) throw new Error("Created log is missing. Aborting.");
-		const currentSmallestDate = currentLog?.smallest_date;
+		let currentSmallestDate: Date = currentLog?.smallest_date;
 
 		for (const post of data) {
 			const author = post.author;
@@ -145,26 +147,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			if (content.length === 0) continue;
 
 			const metrics = parseMetrics(post.data);
-			if (time.getUTCDate() < currentSmallestDate.getUTCDate()) {
-				const updatelogquery = await LogModel.findOneAndUpdate(
-					{
-						_id: log_id,
-					},
-					{
-						smallest_date: time,
-					},
-					{
-						upsert: false,
-					}
-				).catch(() => null);
-				if (updatelogquery === null)
-					throw new Error("Failed to update log.. aborting");
-				consola.success(
-					"Successfully updated log with: " +
-						updatelogquery.smallest_date.getUTCDate()
-				);
-			}
-
+			if (time.getTime() < currentSmallestDate.getTime())
+				currentSmallestDate = time;
 			cleaned.push({
 				tweet_id: post.id,
 				author: author,
@@ -177,14 +161,39 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 				view_count: metrics.views || 0,
 			});
 		}
-
-		const writeResult = await PostModel.insertMany(cleaned, {
-			ordered: false,
-		}).catch((err: any) => {
-			consola.error("Some inserts failed");
-			consola.log("Failed documents: ", err.writeErrors);
-			return err.result?.insertedDocs || [];
-		});
-		consola.success("Successfully pushed: " + writeResult.length);
+		const updatelogquery = await LogModel.findOneAndUpdate(
+			{
+				_id: log_id,
+			},
+			{
+				smallest_date: currentSmallestDate,
+			},
+			{
+				upsert: false,
+			}
+		).catch(() => null);
+		if (updatelogquery === null)
+			throw new Error("Failed to update log.. aborting");
+		consola.success(
+			"Successfully updated log with: " + updatelogquery.smallest_date.getTime()
+		);
+		//Insert new data into the database.
+		try {
+			const result = await PostModel.insertMany(cleaned, {
+				ordered: false,
+			});
+			consola.success(`Successfully pushed: ${result.length} Failed push: 000`);
+		} catch (err: any) {
+			const failedIndexes = err.writeErrors?.map((e: any) => e.index) ?? [];
+			// Attempt to reconstruct successful docs
+			const successDocs = cleaned.filter(
+				(_, idx) => !failedIndexes.includes(idx)
+			);
+			consola.success(
+				`Successfully pushed: ${padNumber(
+					successDocs.length
+				)} Failed push: ${padNumber(failedIndexes.length)}`
+			);
+		}
 	}
 })();
