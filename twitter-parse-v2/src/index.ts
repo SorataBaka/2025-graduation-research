@@ -104,7 +104,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			parse_limit: 5,
 			scroll_delay: 850,
 			ratelimit_timeout: 7 * 60 * 1000,
-			scroll_timeout: 10 * 60 * 60 * 1000,
+			scroll_timeout: 10000,
 		}
 	);
 	await parser.authenticate();
