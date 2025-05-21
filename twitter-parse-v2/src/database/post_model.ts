@@ -19,19 +19,19 @@ const schema = new mongoose.Schema({
 		required: true,
 	},
 	comment_count: {
-		type: String,
+		type: Number,
 		required: true,
 	},
 	repost_count: {
-		type: String,
+		type: Number,
 		required: true,
 	},
 	like_count: {
-		type: String,
+		type: Number,
 		required: true,
 	},
 	view_count: {
-		type: String,
+		type: Number,
 		required: true,
 	},
 	created_at: {
