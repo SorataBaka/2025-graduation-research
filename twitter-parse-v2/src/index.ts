@@ -117,6 +117,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			parser.setSearchURL(
 				ParseClass.generateSearchURL({
 					either: [
+						"#RUUTNIPerkuatNKRI",
+						"#RUUTNI",
 						"#TolakRUUTNI",
 						"#IndonesiaGelap",
 						'"protes"',
