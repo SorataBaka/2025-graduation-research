@@ -141,8 +141,9 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 
 		for (const post of data) {
 			const author = post.author;
-			const time =
-				post.time === "DATEUNDEFINED" ? new Date() : new Date(post.time);
+			let time = new Date(post.time);
+			if (isNaN(time.getTime())) time = new Date();
+
 			const content = post.content.replace(/@[^\s]+/g, "").trim();
 			if (content.length === 0) continue;
 
@@ -161,12 +162,15 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 				view_count: metrics.views || 0,
 			});
 		}
+		const oneDayAgo = new Date(
+			currentSmallestDate.getTime() - 24 * 60 * 60 * 1000
+		);
 		const updatelogquery = await LogModel.findOneAndUpdate(
 			{
 				_id: log_id,
 			},
 			{
-				smallest_date: currentSmallestDate,
+				smallest_date: oneDayAgo,
 			},
 			{
 				upsert: false,
