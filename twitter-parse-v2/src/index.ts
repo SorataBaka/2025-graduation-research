@@ -122,6 +122,14 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			if (!findLatest) throw new Error("Created log is missing");
 
 			const latestdate = findLatest.smallest_date;
+			const untilDate = new Date(
+				Date.UTC(
+					latestdate.getUTCFullYear(),
+					latestdate.getUTCMonth(),
+					latestdate.getUTCDate()
+				)
+			);
+			untilDate.setUTCDate(untilDate.getUTCDate() - 1);
 
 			parser.setSearchURL(
 				ParseClass.generateSearchURL({
@@ -137,8 +145,7 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 
 		const currentLog = await LogModel.findById(log_id);
 		if (!currentLog) throw new Error("Created log is missing. Aborting.");
-		let currentSmallestDate: Date = currentLog?.smallest_date;
-
+		let currentSmallestDate: Date = currentLog.smallest_date;
 		for (const post of data) {
 			const author = post.author;
 			let time = new Date(post.time);
@@ -148,8 +155,9 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			if (content.length === 0) continue;
 
 			const metrics = parseMetrics(post.data);
-			if (time.getTime() < currentSmallestDate.getTime())
+			if (time.getTime() < currentSmallestDate.getTime()) {
 				currentSmallestDate = time;
+			}
 			cleaned.push({
 				tweet_id: post.id,
 				author: author,
@@ -162,15 +170,12 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 				view_count: metrics.views || 0,
 			});
 		}
-		const oneDayAgo = new Date(
-			currentSmallestDate.getTime() - 24 * 60 * 60 * 1000
-		);
 		const updatelogquery = await LogModel.findOneAndUpdate(
 			{
 				_id: log_id,
 			},
 			{
-				smallest_date: oneDayAgo,
+				smallest_date: currentSmallestDate,
 			},
 			{
 				upsert: false,
@@ -186,7 +191,9 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			const result = await PostModel.insertMany(cleaned, {
 				ordered: false,
 			});
-			consola.success(`Successfully pushed: ${result.length} Failed push: 000`);
+			consola.success(
+				`Successfully pushed: ${padNumber(result.length)} Failed push: 000`
+			);
 		} catch (err: any) {
 			const failedIndexes = err.writeErrors?.map((e: any) => e.index) ?? [];
 			// Attempt to reconstruct successful docs
