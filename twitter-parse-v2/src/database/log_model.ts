@@ -5,6 +5,10 @@ const schema = new mongoose.Schema({
 		type: Date,
 		required: true,
 	},
+	timeline_start_date: {
+		type: Date,
+		required: true,
+	},
 	started_at: {
 		type: Date,
 		required: true,

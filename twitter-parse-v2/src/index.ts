@@ -36,33 +36,22 @@ const padNumber = (num: number): string => {
 };
 
 const searchParameters = [
-	"#RUUTNIPerkuatNKRI",
-	"#RUUTNI",
 	"#TolakRUUTNI",
-	"#IndonesiaGelap",
-	'"protes"',
-	'"Mahasiswa bergerak"',
-	'"demo mahasiswa"',
-	'"demonstrasi"',
-	'"aksi demo"',
-	'"tuntutan mahasiswa"',
-	'"RUU TNI Jokowi"',
-	'"Tolak revisi RUU TNI"',
-	'"RUU TNI demo"',
-	'"RUU TNI protes"',
-	'"DPR" AND "RUU TNI"',
-	'"DPR RUU TNI"',
-	'"RUU TNI ditolak"',
-	'"Revisi RUU TNI"',
-	'"RUU TNI kontroversial"',
-	'"Tolak RUU TNI"',
+	"#RUUTNI",
 	'"RUU TNI"',
-	'"Indonesia gelap"',
-	'"demo"',
+	'"demo mahasiswa"',
 	'"unjuk rasa"',
-	'"unjukrasa"',
-	'"UU TNI"',
-	'"dukung tni"',
+	'"demonstrasi"',
+	"#DukungRUUTNI",
+	'"Dukung RUU TNI"',
+	"#RUUTNIPerkuatNKRI",
+	"#GagalkanRUUTNI",
+	"#CabutRUUTNI",
+	"#PeringatanDarurat",
+	"#IndonesiaGelap",
+	"#TolakRevisiUUTNI",
+	"#TolakDwifungsiABRI",
+	'"dwifungsi"',
 ];
 
 function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
@@ -91,7 +80,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 	await initialize_db(mongodb_uri as string);
 	const latestlog = await LogModel.create({
 		smallest_date: new Date(),
-		started_at: Date.now(),
+		started_at: new Date(),
+		timeline_start_date: new Date(),
 	});
 	const log_id = latestlog.id;
 	consola.success("Created new log with id: " + log_id);
@@ -104,8 +94,8 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			proxy_username,
 			proxy_password,
 			parse_limit: 2,
-			scroll_delay: 750,
-			ratelimit_timeout: 7 * 60 * 1000,
+			scroll_delay: 500,
+			ratelimit_timeout: 10 * 60 * 1000,
 			scroll_timeout: 10000,
 		}
 	);
@@ -120,16 +110,17 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 			consola.warn("Reached end of current timeline.");
 			const findLatest = await LogModel.findById(log_id);
 			if (!findLatest) throw new Error("Created log is missing");
-
+			const timelineStartDate = findLatest.timeline_start_date;
 			const latestdate = findLatest.smallest_date;
-			const untilDate = new Date(
-				Date.UTC(
-					latestdate.getUTCFullYear(),
-					latestdate.getUTCMonth(),
-					latestdate.getUTCDate()
-				)
-			);
-			untilDate.setUTCDate(untilDate.getUTCDate() - 1);
+			if (
+				timelineStartDate.getTime() - latestdate.getTime() <
+				24 * 60 * 60 * 1000
+			) {
+				latestdate.setDate(latestdate.getDate() - 1);
+				consola.warn(
+					"Large timeline detected. Stepping back 1 day to prevent looping"
+				);
+			}
 
 			parser.setSearchURL(
 				ParseClass.generateSearchURL({
@@ -137,6 +128,22 @@ function parseMetrics(text: string): Partial<Record<MetricKey, number>> {
 					timeline: Timeline.LATEST,
 					until: latestdate,
 				})
+			);
+			const updateStartDateQuery = await LogModel.findOneAndUpdate(
+				{
+					_id: log_id,
+				},
+				{
+					timeline_start_date: latestdate,
+				},
+				{
+					upsert: false,
+				}
+			).catch(() => null);
+			if (updateStartDateQuery === null)
+				throw new Error("Failed to update timeline start date");
+			consola.success(
+				`Successfully updated timeline start date to ${latestdate.toString()}`
 			);
 			await parser.navigateRecursive();
 			continue;

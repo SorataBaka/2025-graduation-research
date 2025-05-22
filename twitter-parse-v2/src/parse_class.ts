@@ -234,16 +234,6 @@ export default class TwitterParserClass {
 											"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a > time"
 										)
 										?.getAttribute("datetime") || "DATEUNDEFINED";
-								//First check if its a reply
-								// const contentSpans =
-								// 	insideContent.children[1].querySelector("div")?.children;
-								// if (contentSpans === undefined || contentSpans.length === 0)
-								// 	return;
-								// let content = "";
-								// for (const span of contentSpans) {
-								// 	content += span.textContent;
-								// }
-								// console.log(content);
 								const contentSpans = insideContent.children;
 								let content: string[] = [];
 								for (let i = 1; i < contentSpans.length - 1; i++) {
@@ -351,9 +341,10 @@ export default class TwitterParserClass {
 		}
 		const fullquery = querybuilder.join(" ");
 		const urlbuilder: string[] = [];
-		urlbuilder.push(`q=${encodeURIComponent(fullquery)}`);
 		if (options.timeline == Timeline.LATEST) urlbuilder.push(`f=live`);
 		if (options.timeline == Timeline.TOP) urlbuilder.push(`f=top`);
+		urlbuilder.push("src=typed_query");
+		urlbuilder.push(`q=${encodeURIComponent(fullquery)}`);
 		return `https://www.x.com/search?${urlbuilder.join("&")}`;
 	}
 }
