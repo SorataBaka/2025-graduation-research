@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { HydratedDocument, InferSchemaType } from "mongoose";
 
 const schema = new mongoose.Schema({
 	smallest_date: {
@@ -14,5 +14,8 @@ const schema = new mongoose.Schema({
 		required: true,
 	},
 });
+
+export type Log = InferSchemaType<typeof schema>;
+export type LogDocument = HydratedDocument<Log>;
 
 export default mongoose.model("logs_database", schema);
