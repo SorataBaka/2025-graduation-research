@@ -80,8 +80,8 @@ export default class TwitterParserClass {
 		proxy_username: string | null = null,
 		proxy_password: string | null = null,
 		cookie_path: string = "cookie.json",
-		parse_limit: number = 10,
-		scroll_delay: number = 1000,
+		parse_limit: number = 2,
+		scroll_delay: number = 500,
 		scroll_timeout: number = 10000,
 		ratelimit_timeout: number = 10 * 60 * 1000
 	) {
