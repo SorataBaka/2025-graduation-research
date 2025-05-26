@@ -1,4 +1,4 @@
-searchParameters:
+either:
   - "#TolakRUUTNI"
   - "#RUUTNI"
   - "RUU TNI"
@@ -15,3 +15,5 @@ searchParameters:
   - "#TolakRevisiUUTNI"
   - "#TolakDwifungsiABRI"
   - "dwifungsi"
+filters:
+  - "blue_verified"

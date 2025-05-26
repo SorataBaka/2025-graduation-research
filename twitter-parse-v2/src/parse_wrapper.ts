@@ -1,34 +1,73 @@
 import LogModel, { LogDocument } from "./database/log_model";
 import PostModel from "./database/post_model";
 import consola from "consola";
-import ParseClass, { Timeline } from "./parse_class";
+import ParseClass from "./parse_class";
 import padNumber from "./lib/pad_number";
 import parseMetrics from "./lib/parse_metrics";
-import { Proxy } from "./types";
+import { Proxy, ConfigType, CLIArgs, Timeline } from "./types";
 export default async (
 	log_data: LogDocument,
-	search_parameters: string[],
+	args: CLIArgs,
+	config: ConfigType,
 	proxy: Proxy,
 	continue_previous: Boolean
 ): Promise<void> => {
 	const log_id = log_data.id;
+	consola.log(
+		"Parsing with configuration: ",
+		{
+			plaintext: config.plaintext,
+			exact: config.exact,
+			either: config.either,
+			excludes: config.excludes,
+			includes: config.includes,
+			by: config.by,
+			replies: config.replies,
+			mentions: config.mentions,
+			filters: config.filters,
+			timeline: config.timeline == 0 ? Timeline.TOP : Timeline.LATEST,
+		},
+		{
+			parse_limit: config.parse_limit,
+			scroll_delay: config.scroll_delay,
+			ratelimit_timeout: config.ratelimit_timeout,
+			scroll_timeout: config.scroll_timeout,
+		}
+	);
+	if (args.until) {
+		const parsedatelimit = new Date(args.until);
+		if (Date.now() < parsedatelimit.getTime()) {
+			consola.success("Reached lower limit");
+			process.exit(0);
+		}
+	}
 	const parser = await ParseClass.initializeWithOptions(
 		ParseClass.generateSearchURL({
-			either: search_parameters,
-			timeline: Timeline.LATEST,
+			plaintext: config.plaintext,
+			exact: config.exact,
+			either: config.either,
+			excludes: config.excludes,
+			includes: config.includes,
+			by: config.by,
+			replies: config.replies,
+			mentions: config.mentions,
+			filters: config.filters,
+			timeline: config.timeline == 0 ? Timeline.TOP : Timeline.LATEST,
+
 			until: continue_previous ? log_data.smallest_date : undefined,
 		}),
 		{
 			proxy_username: proxy.username,
 			proxy_password: proxy.password,
-			parse_limit: 2,
-			scroll_delay: 500,
-			ratelimit_timeout: 10 * 60 * 1000,
-			scroll_timeout: 10000,
+			parse_limit: config.parse_limit,
+			scroll_delay: config.scroll_delay,
+			ratelimit_timeout: config.ratelimit_timeout,
+			scroll_timeout: config.scroll_timeout,
 		}
 	);
 	await parser.authenticate();
 	await parser.navigateRecursive();
+
 	while (true) {
 		const data = await parser.parse();
 		consola.success("Acquired " + data.length + " Tweets");
@@ -48,11 +87,26 @@ export default async (
 					"Large timeline detected. Stepping back 1 day to prevent looping"
 				);
 			}
+			if (args.until) {
+				const parsedatelimit = new Date(args.until);
+				if (latestdate.getTime() < parsedatelimit.getTime()) {
+					consola.success("Reached lower limit");
+					process.exit(0);
+				}
+			}
 
 			parser.setSearchURL(
 				ParseClass.generateSearchURL({
-					either: search_parameters,
-					timeline: Timeline.LATEST,
+					plaintext: config.plaintext,
+					exact: config.exact,
+					either: config.either,
+					excludes: config.excludes,
+					includes: config.includes,
+					by: config.by,
+					replies: config.replies,
+					mentions: config.mentions,
+					filters: config.filters,
+					timeline: config.timeline == 0 ? Timeline.TOP : Timeline.LATEST,
 					until: latestdate,
 				})
 			);

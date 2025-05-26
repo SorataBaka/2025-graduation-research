@@ -2,65 +2,13 @@ import puppeteer, { Browser, Page, Cookie } from "puppeteer";
 import fs from "fs";
 import path, { parse } from "path";
 import consola from "consola";
-import { urlencoded } from "body-parser";
-export interface PostRaw {
-	author: string;
-	time: string;
-	content: string;
-	data: string;
-	id: string;
-}
-export type TwitterFilter =
-	| "media"
-	| "twimg"
-	| "images"
-	| "videos"
-	| "periscope"
-	| "native_video"
-	| "vine"
-	| "consumer_video"
-	| "pro_video"
-	| "verified"
-	| "blue_verified"
-	| "follows"
-	| "social"
-	| "trusted"
-	| "safe"
-	| "news"
-	| "spaces"
-	| "replies"
-	| "retweets"
-	| "nativeretweets"
-	| "quote"
-	| "links";
-export enum Timeline {
-	TOP,
-	LATEST,
-}
-export interface SearchOptions {
-	plaintext?: string;
-	by?: string;
-	replies?: string;
-	mentions?: string;
-	exact?: string;
-	includes?: string[];
-	excludes?: string[];
-	either?: string[];
-	filters?: TwitterFilter[];
-	since?: Date;
-	until?: Date;
-	timeline: Timeline;
-}
-export interface TwitterParserClassOptions {
-	proxy_username?: string;
-	proxy_password?: string;
-	headless?: boolean;
-	cookie_path?: string;
-	parse_limit?: number;
-	scroll_delay?: number;
-	scroll_timeout?: number;
-	ratelimit_timeout?: number;
-}
+import {
+	TwitterParserClassOptions,
+	PostRaw,
+	SearchOptions,
+	Timeline,
+} from "./types";
+
 export default class TwitterParserClass {
 	private browser: Browser;
 	private page: Page | undefined;
@@ -320,7 +268,8 @@ export default class TwitterParserClass {
 			}
 		}
 		if (Array.isArray(options.either) && options.either.length > 0) {
-			querybuilder.push(`(${options.either.join(" OR ")})`);
+			const cleanedoptions = options.either.map((token) => `"${token}"`);
+			querybuilder.push(`(${cleanedoptions.join(" OR ")})`);
 		}
 		if (Array.isArray(options.filters) && options.filters.length > 0) {
 			for (const filter of options.filters) {

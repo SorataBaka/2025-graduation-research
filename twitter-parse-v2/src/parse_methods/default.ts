@@ -1,9 +1,10 @@
 import LogModel from "../database/log_model";
 import consola from "consola";
 import parse_wrapper from "../parse_wrapper";
-import { Proxy } from "../types";
+import { Proxy, ConfigType, CLIArgs } from "../types";
 export default async (
-	search_parameters: string[],
+	args: CLIArgs,
+	configuration: ConfigType,
 	proxy: Proxy
 ): Promise<void> => {
 	const currentDate = new Date();
@@ -15,5 +16,5 @@ export default async (
 	if (latestlog === null)
 		throw new Error("Unable to create new log. Check database connected?");
 	consola.success("Created new log with id: ", latestlog.id);
-	await parse_wrapper(latestlog, search_parameters, proxy, false);
+	await parse_wrapper(latestlog, args, configuration, proxy, false);
 };
