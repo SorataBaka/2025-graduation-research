@@ -8,10 +8,13 @@ import parseDefault from "./parse_methods/default";
 import { isValidObjectId } from "mongoose";
 import path from "path";
 import fs from "fs";
-import joi from "@hapi/joi";
 import yaml from "js-yaml";
 import "joi-extract-type";
 import { CLIArgs, ConfigType } from "./types";
+import InitializeAPI from "./api";
+import configvalidation from "./schema/config_validation";
+import loadYaml from "./lib/load_yaml";
+
 dotenv.config();
 
 const proxy_username = process.env.PROXY_USERNAME || "";
@@ -22,58 +25,6 @@ const proxy_enabled = proxy_username !== "" && proxy_password !== "";
 if (!proxy_enabled) consola.warn("Proxy authentication disabled");
 else consola.warn("Running with proxy");
 if (mongodb_uri === undefined) throw new Error("MONGODB_URI is not provided");
-
-const configvalidation = joi
-	.object({
-		// From original config
-		parse_limit: joi.number(),
-		scroll_delay: joi.number(),
-		scroll_timeout: joi.number(),
-		ratelimit_timeout: joi.number(),
-
-		// Optional — From SearchOptions (if used in config)
-		plaintext: joi.string(),
-		by: joi.string(),
-		replies: joi.string(),
-		mentions: joi.string(),
-		exact: joi.string(),
-		includes: joi.array().items(joi.string()),
-		excludes: joi.array().items(joi.string()),
-		either: joi.array().items(joi.string()),
-		filters: joi
-			.array()
-			.items(
-				joi
-					.string()
-					.valid(
-						"media",
-						"twimg",
-						"images",
-						"videos",
-						"periscope",
-						"native_video",
-						"vine",
-						"consumer_video",
-						"pro_video",
-						"verified",
-						"blue_verified",
-						"follows",
-						"social",
-						"trusted",
-						"safe",
-						"news",
-						"spaces",
-						"replies",
-						"retweets",
-						"nativeretweets",
-						"quote",
-						"links"
-					)
-			),
-		timeline: joi.number().valid(0, 1).default(1), // Timeline.TOP = 0, LATEST = 1
-	})
-	.xor("includes", "excludes", "either", "exact", "plaintext");
-export { configvalidation };
 
 const args = yargs
 	.locale("en")
@@ -98,6 +49,24 @@ const args = yargs
 		alias: "utl",
 		describe: "Parse until date",
 		type: "string",
+	})
+	.option("endpoint", {
+		alias: "api",
+		describe: "Option to enable endpoint status",
+		type: "boolean",
+		default: false,
+	})
+	.option("port", {
+		alias: "p",
+		describe: "Port for the endpoint",
+		type: "number",
+		default: 3000,
+	})
+	.option("headless", {
+		alias: "h",
+		describe: "Headless mode for the browser",
+		type: "boolean",
+		default: false,
 	})
 	.check((argv) => {
 		if (argv.mode === "custom" && !argv.id) {
@@ -134,13 +103,15 @@ const args = yargs
 
 const execute = async () => {
 	await initialize_db(mongodb_uri as string);
-	const configfilepath = path.resolve(args.config);
-	if (!fs.existsSync(configfilepath))
-		throw new Error("Configuration file is not found");
-	const readyaml = yaml.load(fs.readFileSync(configfilepath, "utf-8"));
-	const validadateObject = configvalidation.validate(readyaml);
-	if (validadateObject.error) throw validadateObject.error;
-	const config = validadateObject.value as ConfigType;
+	if (args.endpoint)
+		InitializeAPI(
+			{
+				port: args.port,
+			},
+			args
+		);
+
+	const config = loadYaml(args);
 
 	switch (args.mode) {
 		case "continue":

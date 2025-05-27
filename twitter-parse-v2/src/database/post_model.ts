@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType, HydratedDocument } from "mongoose";
 
 const schema = new mongoose.Schema({
 	tweet_id: {
@@ -39,9 +39,7 @@ const schema = new mongoose.Schema({
 		required: true,
 	},
 });
+export type Post = InferSchemaType<typeof schema>;
+export type PostDocument = HydratedDocument<Post>;
 
-const model = mongoose.model("posts", schema);
-
-export default model;
-
-export type PostType = typeof model;
+export default mongoose.model("posts", schema);

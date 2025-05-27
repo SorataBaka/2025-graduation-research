@@ -18,5 +18,5 @@ export default async (
 		process.exit(1);
 	}
 	consola.success("Continuing from log with id: ", latestlog.id);
-	await parse_wrapper(latestlog, args, configuration, proxy, true);
+	await parse_wrapper(latestlog, args, configuration, proxy);
 };

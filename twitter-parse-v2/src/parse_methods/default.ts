@@ -16,5 +16,5 @@ export default async (
 	if (latestlog === null)
 		throw new Error("Unable to create new log. Check database connected?");
 	consola.success("Created new log with id: ", latestlog.id);
-	await parse_wrapper(latestlog, args, configuration, proxy, false);
+	await parse_wrapper(latestlog, args, configuration, proxy);
 };

@@ -65,6 +65,9 @@ interface Proxy {
 interface BaseArgs {
 	config: string;
 	until?: string;
+	endpoint: boolean;
+	port: number;
+	headless: boolean;
 }
 
 interface ModeDefault extends BaseArgs {

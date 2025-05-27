@@ -9,9 +9,9 @@ export default async (
 	log_data: LogDocument,
 	args: CLIArgs,
 	config: ConfigType,
-	proxy: Proxy,
-	continue_previous: Boolean
+	proxy: Proxy
 ): Promise<void> => {
+	const continue_previous = args.mode !== "default";
 	const log_id = log_data.id;
 	consola.log(
 		"Parsing with configuration: ",
@@ -63,6 +63,7 @@ export default async (
 			scroll_delay: config.scroll_delay,
 			ratelimit_timeout: config.ratelimit_timeout,
 			scroll_timeout: config.scroll_timeout,
+			headless: args.headless,
 		}
 	);
 	await parser.authenticate();

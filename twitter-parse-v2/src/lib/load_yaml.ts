@@ -1,32 +1,17 @@
 import fs from "fs";
 import yaml from "js-yaml";
 import path from "path";
+import { CLIArgs } from "../types";
+import configvalidation from "../schema/config_validation";
+import { ConfigType } from "../types";
 
-export default (filePath: string) => {
-	try {
-		const absolutePath = path.resolve(filePath);
-
-		if (!fs.existsSync(absolutePath)) {
-			throw new Error(`YAML file not found: ${absolutePath}`);
-		}
-
-		const content = fs.readFileSync(absolutePath, "utf8");
-
-		let parsed;
-		try {
-			parsed = yaml.load(content);
-		} catch (yamlErr: any) {
-			throw new Error(`YAML syntax error in ${filePath}: ${yamlErr.message}`);
-		}
-
-		// Optional: Validate the result
-		if (typeof parsed !== "object" || parsed === null) {
-			throw new Error(`Parsed YAML is not a valid object in ${filePath}`);
-		}
-
-		return parsed;
-	} catch (err: any) {
-		console.error(`[YAML LOAD ERROR] ${err.message}`);
-		process.exit(1); // Optional: fail fast
-	}
+export default (args: CLIArgs): ConfigType => {
+	const configfilepath = path.resolve(args.config);
+	if (!fs.existsSync(configfilepath))
+		throw new Error("Configuration file is not found");
+	const readyaml = yaml.load(fs.readFileSync(configfilepath, "utf-8"));
+	const validadateObject = configvalidation.validate(readyaml);
+	if (validadateObject.error) throw validadateObject.error;
+	const config = validadateObject.value as ConfigType;
+	return config;
 };
