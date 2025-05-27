@@ -1,5 +1,3 @@
-import { configvalidation } from ".";
-
 interface PostRaw {
 	author: string;
 	time: string;
