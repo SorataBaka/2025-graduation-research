@@ -1,0 +1,4 @@
+-e .
+torch
+transformers
+scikit-learn

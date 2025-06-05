@@ -49,7 +49,24 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongopassword
     volumes:
       - mongodb_data:/data/db
-
+  ml-backend:
+    container_name: ml-backend
+    build:
+      context: ./relevancy-prediction-backend
+      dockerfile: Dockerfile
+      args:
+        TEST_ENV: "false"
+    environment:
+      - LOG_LEVEL=DEBUG
+      - WORKERS=1
+      - THREADS=8
+      - MODEL_DIR=/data/models
+      - LABEL_STUDIO_URL=http://labelstudio:8080
+      - LABEL_STUDIO_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6ODA1NjMxNjI4OCwiaWF0IjoxNzQ5MTE2Mjg4LCJqdGkiOiJkZGM3ZWU0YTA0ZTg0N2Y2YTBiMmMwOWU4YmZjODhhOSIsInVzZXJfaWQiOjJ9.IT4jV9crD161uD6T38liKH-gWfgWEd7sylp30Bj7TpY
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./data/server:/data
 volumes:
   pgdata:
   labelstudio_data:
