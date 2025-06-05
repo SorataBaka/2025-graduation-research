@@ -14,9 +14,11 @@ class NewModel(LabelStudioMLBase):
         """Configure any parameters of your model here
         """
         self.set("model_version", "0.0.1")
-        self.model = AutoModelForSequenceClassification.from_pretrained("tianharjuno/ruu-tni-relevancy-classification", cache_dir="cache/")
+        self.model = AutoModelForSequenceClassification.from_pretrained("tianharjuno/ruu-tni-relevancy-classification", cache_dir="cache/", device_map=None)
         self.tokenizer = AutoTokenizer.from_pretrained("tianharjuno/ruu-tni-relevancy-classification", cache_dir="cache/")
         self.model.eval()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
         id2label = getattr(self.model.config, "id2label", None)
         if not isinstance(id2label, dict):
             id2label = {0: "irrelevant", 1: "relevant"}  # your fallback
@@ -33,13 +35,15 @@ class NewModel(LabelStudioMLBase):
         """
         results = []
         for task in tasks:
-            text = task.get("data", {}).get("text", "")
+            print(task)
+            text = task.get("data", {}).get("content", "")
             if not text:
                 results.append({
                     "result": []
                 })
                 continue
             inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding="max_length", max_length=256)
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
             with torch.no_grad():
                 outputs = self.model(**inputs)
             logits = outputs.logits
@@ -48,7 +52,7 @@ class NewModel(LabelStudioMLBase):
             label_map = ["irrelevant", "relevant"]
             results.append({
                 "result": [{
-                    "from_name": "relevancy",
+                    "from_name": "sentiment",
                     "to_name": "text",
                     "type": "choices",
                     "value": {"choices": [label_map[index]]},
@@ -65,28 +69,7 @@ class NewModel(LabelStudioMLBase):
         Parsed JSON Label config: {self.parsed_label_config}
         Extra params: {self.extra_params}''')
         
-        return cast(ModelResponse, results) 
-
-        # example for resource downloading from Label Studio instance,
-        # you need to set env vars LABEL_STUDIO_URL and LABEL_STUDIO_API_KEY
-        # path = self.get_local_path(tasks[0]['data']['image_url'], task_id=tasks[0]['id'])
-
-        # example for simple classification
-        # return [{
-        #     "model_version": self.get("model_version"),
-        #     "score": 0.12,
-        #     "result": [{
-        #         "id": "vgzE336-a8",
-        #         "from_name": "sentiment",
-        #         "to_name": "text",
-        #         "type": "choices",
-        #         "value": {
-        #             "choices": [ "Negative" ]
-        #         }
-        #     }]
-        # }]
-        
-        return ModelResponse(predictions=[])
+        return ModelResponse(predictions=results)
     
     def fit(self, event, data, **kwargs):
         """

@@ -28,7 +28,9 @@ RUN --mount=type=cache,target="/var/cache/apt",sharing=locked \
     python3-dev; \
     apt-get autoremove -y
 
+RUN pip install --upgrade pip    
 # install base requirements
+
 COPY requirements-base.txt .
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     pip install -r requirements-base.txt
@@ -50,5 +52,7 @@ COPY . .
 
 EXPOSE 9090
 
-CMD ["gunicorn", "--preload", "--bind", ":$PORT", "--workers", "$WORKERS", "--threads", "$THREADS", "--timeout", "0", "_wsgi:app"]
+RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; AutoModelForSequenceClassification.from_pretrained('tianharjuno/ruu-tni-relevancy-classification', cache_dir='cache/'); AutoTokenizer.from_pretrained('tianharjuno/ruu-tni-relevancy-classification', cache_dir='cache/')"
 
+
+CMD ["sh", "-c", "gunicorn --preload --bind :$PORT --workers $WORKERS --threads $THREADS --timeout 0 _wsgi:app"]
