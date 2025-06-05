@@ -188,7 +188,8 @@ cython_debug/
 .cursorindexingignore
 
 dump/
-out/
 cache/
 logs/
 results/
+models/
+tokenizers/
