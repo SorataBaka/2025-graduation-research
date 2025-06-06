@@ -6,12 +6,12 @@ ARG TEST_ENV
 
 WORKDIR /app
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=${PORT:-9090} \
-    PIP_CACHE_DIR=/.cache \
-    WORKERS=1 \
-    THREADS=8
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 
+ENV PORT=9090
+ENV PIP_CACHE_DIR=/.cache
+ENV WORKERS=1 
+ENV THREADS=8
 
 # Update the base OS
 RUN --mount=type=cache,target="/var/cache/apt",sharing=locked \
@@ -51,8 +51,5 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
 COPY . .
 
 EXPOSE 9090
-
-RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; AutoModelForSequenceClassification.from_pretrained('tianharjuno/ruu-tni-relevancy-classification', cache_dir='cache/'); AutoTokenizer.from_pretrained('tianharjuno/ruu-tni-relevancy-classification', cache_dir='cache/')"
-
 
 CMD ["sh", "-c", "gunicorn --preload --bind :$PORT --workers $WORKERS --threads $THREADS --timeout 0 _wsgi:app"]

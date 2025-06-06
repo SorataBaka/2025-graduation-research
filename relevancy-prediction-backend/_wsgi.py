@@ -3,6 +3,15 @@ import argparse
 import json
 import logging
 import logging.config
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+HUGGINGFACE_PATH = "tianharjuno/ruu-tni-relevancy-classification"
+BASE_SAVE_PATH="preload/"
+download_model = AutoModelForSequenceClassification.from_pretrained(HUGGINGFACE_PATH)
+download_tokenizer = AutoTokenizer.from_pretrained(HUGGINGFACE_PATH)
+
+download_model.save_pretrained(BASE_SAVE_PATH + "model")
+download_tokenizer.save_pretrained(BASE_SAVE_PATH + "tokenizer")
 
 # Set a default log level if LOG_LEVEL is not defined
 log_level = os.getenv("LOG_LEVEL", "INFO")

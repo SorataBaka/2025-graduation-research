@@ -1,28 +1,31 @@
 from typing import List, Dict, Optional
 from label_studio_ml.model import LabelStudioMLBase
 from label_studio_ml.response import ModelResponse
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoConfig
 import torch
-
-from typing import cast
-
-class NewModel(LabelStudioMLBase):
-    """Custom ML Backend model
-    """
-    
+HUGGINGFACE_PATH = "tianharjuno/ruu-tni-relevancy-classification"
+BASE_SAVE_PATH="preload/"
+class NewModel(LabelStudioMLBase):    
     def setup(self):
-        """Configure any parameters of your model here
-        """
+        id2label = {
+            0: "irrelevant",
+            1: "relevant"
+        }
+        label2id = {v: k for k, v in id2label.items()}
+        
+        config = AutoConfig.from_pretrained(
+            BASE_SAVE_PATH+"model",
+            num_labels=2,
+            id2label=id2label,
+            label2id=label2id
+        )
+        
         self.set("model_version", "0.0.1")
-        self.model = AutoModelForSequenceClassification.from_pretrained("tianharjuno/ruu-tni-relevancy-classification", cache_dir="cache/", device_map=None)
-        self.tokenizer = AutoTokenizer.from_pretrained("tianharjuno/ruu-tni-relevancy-classification", cache_dir="cache/")
+        self.model = AutoModelForSequenceClassification.from_pretrained(BASE_SAVE_PATH + "model", local_files_only=True,config=config,torch_dtype="auto", device_map="cpu", low_cpu_mem_usage=False)
+        self.tokenizer = AutoTokenizer.from_pretrained(BASE_SAVE_PATH+"tokenizer", local_files_only=True)
         self.model.eval()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
-        id2label = getattr(self.model.config, "id2label", None)
-        if not isinstance(id2label, dict):
-            id2label = {0: "irrelevant", 1: "relevant"}  # your fallback
-
+        
         self.id2label = id2label
 
     def predict(self, tasks: List[Dict], context: Optional[Dict] = None, **kwargs) -> ModelResponse:
@@ -34,8 +37,9 @@ class NewModel(LabelStudioMLBase):
                 predictions: [Predictions array in JSON format](https://labelstud.io/guide/export.html#Label-Studio-JSON-format-of-annotated-tasks)
         """
         results = []
+        print(next(self.model.parameters()).device)
+
         for task in tasks:
-            print(task)
             text = task.get("data", {}).get("content", "")
             if not text:
                 results.append({
@@ -49,38 +53,18 @@ class NewModel(LabelStudioMLBase):
             logits = outputs.logits
             probabilities = torch.softmax(logits, dim=1).squeeze()
             index = int(torch.argmax(probabilities).item())
-            label_map = ["irrelevant", "relevant"]
             results.append({
                 "result": [{
                     "from_name": "sentiment",
                     "to_name": "text",
                     "type": "choices",
-                    "value": {"choices": [label_map[index]]},
+                    "value": {"choices": [self.model.config.id2label[index]]},
                     'score': probabilities[index].item()
                 }]
-            })
-        
-    
-        print(f'''\
-        Run prediction on {tasks}
-        Received context: {context}
-        Project ID: {self.project_id}
-        Label config: {self.label_config}
-        Parsed JSON Label config: {self.parsed_label_config}
-        Extra params: {self.extra_params}''')
-        
+            })        
         return ModelResponse(predictions=results)
     
     def fit(self, event, data, **kwargs):
-        """
-        This method is called each time an annotation is created or updated
-        You can run your logic here to update the model and persist it to the cache
-        It is not recommended to perform long-running operations here, as it will block the main thread
-        Instead, consider running a separate process or a thread (like RQ worker) to perform the training
-        :param event: event type can be ('ANNOTATION_CREATED', 'ANNOTATION_UPDATED', 'START_TRAINING')
-        :param data: the payload received from the event (check [Webhook event reference](https://labelstud.io/guide/webhook_reference.html))
-        """
-
         # use cache to retrieve the data from the previous fit() runs
         old_data = self.get('my_data')
         old_model_version = self.get('model_version')
