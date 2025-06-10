@@ -21,7 +21,7 @@ class NewModel(LabelStudioMLBase):
             label2id=label2id
         )
         
-        self.set("model_version", "1.0.0")
+        self.set("model_version", "0.1.0")
         self.model = AutoModelForSequenceClassification.from_pretrained(BASE_SAVE_PATH + "model", local_files_only=True,config=config,torch_dtype="auto", device_map="cpu", low_cpu_mem_usage=False)
         self.tokenizer = AutoTokenizer.from_pretrained(BASE_SAVE_PATH+"tokenizer", local_files_only=True)
         self.model.eval()   
