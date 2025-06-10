@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional
 from label_studio_ml.model import LabelStudioMLBase
 from label_studio_ml.response import ModelResponse
+
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoConfig
 import torch
 HUGGINGFACE_PATH = "tianharjuno/ruu-tni-relevancy-classification"
@@ -14,18 +15,17 @@ class NewModel(LabelStudioMLBase):
         label2id = {v: k for k, v in id2label.items()}
         
         config = AutoConfig.from_pretrained(
-            BASE_SAVE_PATH+"model",
+            BASE_SAVE_PATH + "model",
             num_labels=2,
             id2label=id2label,
             label2id=label2id
         )
         
-        self.set("model_version", "0.0.1")
+        self.set("model_version", "1.0.0")
         self.model = AutoModelForSequenceClassification.from_pretrained(BASE_SAVE_PATH + "model", local_files_only=True,config=config,torch_dtype="auto", device_map="cpu", low_cpu_mem_usage=False)
         self.tokenizer = AutoTokenizer.from_pretrained(BASE_SAVE_PATH+"tokenizer", local_files_only=True)
-        self.model.eval()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
+        self.model.eval()   
+        self.device = torch.device("cpu")
         self.id2label = id2label
 
     def predict(self, tasks: List[Dict], context: Optional[Dict] = None, **kwargs) -> ModelResponse:
@@ -54,15 +54,15 @@ class NewModel(LabelStudioMLBase):
             probabilities = torch.softmax(logits, dim=1).squeeze()
             index = int(torch.argmax(probabilities).item())
             results.append({
+                'score': probabilities[index].item(),
                 "result": [{
                     "from_name": "sentiment",
                     "to_name": "text",
                     "type": "choices",
                     "value": {"choices": [self.model.config.id2label[index]]},
-                    'score': probabilities[index].item()
                 }]
             })        
-        return ModelResponse(predictions=results)
+        return ModelResponse(predictions=results, )
     
     def fit(self, event, data, **kwargs):
         # use cache to retrieve the data from the previous fit() runs
