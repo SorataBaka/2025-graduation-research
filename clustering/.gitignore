@@ -3,3 +3,4 @@ cache/
 out/
 tokenizers/
 models/
+results/
