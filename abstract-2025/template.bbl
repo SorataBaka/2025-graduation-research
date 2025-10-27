@@ -15,6 +15,11 @@ Google Chrome.
 \newblock Koalisi masyarakat sipil serukan \#tolakruutni yang ancam demokrasi (civil society coalition calls for \#tolakruutni that threatens democracy).
 \newblock CNN Indonesia, 2024.
 
+\bibitem{mazumder2023dataperf}
+Mazumder et~al.
+\newblock Dataperf: Benchmarks for data-centric ai development.
+\newblock In {\em Advances in Neural Information Processing Systems 36 (NeurIPS 2023) Track on Datasets and Benchmarks}, 2023.
+
 \bibitem{nodejs}
 OpenJS Foundation.
 \newblock Node.js, 2025.
@@ -34,6 +39,21 @@ Ilham Hibatullah, Rizky Ichsan~Nur Rahman, Hikmal Maulana, David Utomo, Sumanto,
 {Human Rights Watch}.
 \newblock Indonesia: Proposed military law threatens rights.
 \newblock Human Rights Watch, 2024.
+
+\bibitem{koto2021indobertweet}
+Fajri Koto, Jey~Han Lau, and Timothy Baldwin.
+\newblock Indobertweet: A pretrained language model for indonesian twitter with effective domain-specific vocabulary initialization.
+\newblock In {\em Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing (EMNLP 2021)}, 2021.
+
+\bibitem{macqueen1967some}
+James MacQueen.
+\newblock Some methods for classification and analysis of multivariate observations.
+\newblock In {\em Proceedings of the fifth Berkeley symposium on mathematical statistics and probability}, number~14, pages 281--297, 1967.
+
+\bibitem{mcinnes2018umap}
+Leland McInnes, John Healy, and James Melville.
+\newblock {UMAP}: Uniform manifold approximation and projection for dimension reduction.
+\newblock {\em arXiv preprint arXiv:1802.03426}, 2018.
 
 \bibitem{Nurhasananda_Akbar_2025}
 Adwin Nurhasananda and Mutaqin Akbar.

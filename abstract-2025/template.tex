@@ -1,6 +1,6 @@
 \documentclass{jabstract}
 \usepackage{url}
-\graphicspath{{./images/eps}}
+\graphicspath{{images/eps}}
 \jtitle{インドネシアにおける2025年軍事法案を巡る世論に関するX（旧Twitter）上の感情分析}
 \jauthor{クリスティアン　ハルジュノ}
 \jaffiliation{情報工学分野}
@@ -83,11 +83,11 @@ With the restriction of access to the official API, parsing data from the offici
 Similar to Google, X's search function implements some search notations that can be used to narrow down and retrieve specific data. Notations such as \texttt{``正確なフレーズ''} or \texttt{単語１ OR 単語２} can help to retrieve exact posts that contain or not contain those specific words~\cite{twitter_search_operators}. 
 
 \begin{verbatim}
-\# 特定のユーザーから「気候変動」に関する画像付きの投稿を検索
+# 特定のユーザーから「気候変動」に関する画像付きの投稿を検索
 from:@username ``気候変動'' filter:media
-\# 「AI」または「人工知能」を含む投稿を検索
+# 「AI」または「人工知能」を含む投稿を検索
 ``AI'' OR ``人工知能''
-\# 2025年1月1日以降の「地震」に関する投稿を検索
+# 2025年1月1日以降の「地震」に関する投稿を検索
 ``地震'' since:2025--01--01
 \end{verbatim}
 
@@ -171,9 +171,27 @@ The parsed posts will be run through several stages of cleaning to normalize noi
 Other than regular expression cleaning, we will also normalize short form words and code switching through the use of available online dictionaries. Shortened words and expressions such as ``BTW'' is normalized to ``By the way'', ``Mager'' to ``Malas gerak'' (Lazy to move), etc. This process of normalizing shortened words is called \texttt{lexical normalization task} which utilizes open-source dictionaries (lexicons)\cite{han-baldwin-2011-lexical}. The dictionary that we will be using in this experiment is \texttt{nasalsabila/kamus-alay} avalable through GitHub\footnote{GitHub Link: \url{https://github.com/nasalsabila/kamus-alay}}\cite{8629151}.
 
 \subsection{関係性分離モデル}
-As previously discussed in section\ref{sec:x-search-enging}, the use of subtle words such as ``demonstration'' risks including irrelevant posts in the dataset. After hydrating the database with the initial round of data mining, we will be training a model that is able to distuinguish between a post that 
+As previously discussed in section\ref{sec:x-search-enging}, the use of subtle words such as ``demonstration'' risks including irrelevant posts in the dataset. After hydrating the database with the initial round of data mining, we will be training a model that is able to distuinguish between a post that relates to the RUU TNI paradigm and a post that does not.
+
+A big challenge in seperating between relevant and irrelevant data is the noisiness and dirtiness of Indonesian twitter data. Within our previously created corpora of seemingly related keywords, we have included hashtags which is known to be used for discussion of the RUU TNI topic as seed in table~\ref{tab:hashtag_translation}. Upon retrieval of text data, we encounter posts that included the hashtag but contain discussions of something completely irrelevant to the main topic. In this case, popular hashtags are being used as an engagement tool to raise the amount of views as can be seen in figure~\ref{fig:tagged-irrelevant-data}.\\
+
+\begin{figurehere}
+  \centering
+  \includegraphics[width=0.9\linewidth]{hashtag_unrelated.eps}
+  \caption{タッグ含み無関係データ(通訳版)}\label{fig:tagged-irrelevant-data}
+\end{figurehere}
+
+Due to amount of unrelated samples within the collected data, we will be training a model based on \texttt{indolem/indobertweet} which is a bert-based model trained on a massive corpora of Indonesian twitter data~\cite{koto2021indobertweet}. However, the noisiness of the underlying dataset itself means we will need to prepare a large amount of data to be sampled, cleaned, labeled, and balanced in order to achieve a model that generalizes well over unseen data~\cite{mazumder2023dataperf}. 
+
+\subsection{ラベル付け作業の削減}
+In order to reduce the amount of labeling needs, we will be implementing a density based clustering and subsampling method to remove sample noise that may affect the general performance of the fine-tuned model. The usage of clustering to produce higher quality samples has been known in the machine learning paradigm for a long time. Most notable method utilized UMAP (Uniform Manifold Approximation and Projection for Dimension Reduction)~\cite{mcinnes2018umap} and KMeans~\cite{macqueen1967some}.
+
+However, KMeans works best with clusters that have globular shapes. 
+
+
 
 \subsection{特徴単語を抽出}
+
 \subsection{第2回データ収集}
 \subsection{分析手法}
 \section{期待される結果と貢献}

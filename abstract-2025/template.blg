@@ -3,44 +3,46 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: template.aux
 The style file: plain.bst
 Database file #1: references.bib
-You've used 11 entries,
+Warning--there's a number but no series in macqueen1967some
+You've used 15 entries,
             2118 wiz_defined-function locations,
-            560 strings with 5952 characters,
-and the built_in function-call counts, 3280 in all, are:
-= -- 318
-> -- 131
-< -- 2
-+ -- 53
-- -- 42
-* -- 190
-:= -- 534
-add.period$ -- 35
-call.type$ -- 11
-change.case$ -- 54
+            579 strings with 6804 characters,
+and the built_in function-call counts, 4519 in all, are:
+= -- 434
+> -- 181
+< -- 4
++ -- 73
+- -- 58
+* -- 258
+:= -- 731
+add.period$ -- 47
+call.type$ -- 15
+change.case$ -- 74
 chr.to.int$ -- 0
-cite$ -- 11
-duplicate$ -- 121
-empty$ -- 291
-format.name$ -- 42
-if$ -- 708
+cite$ -- 16
+duplicate$ -- 182
+empty$ -- 405
+format.name$ -- 58
+if$ -- 979
 int.to.chr$ -- 0
-int.to.str$ -- 11
-missing$ -- 5
-newline$ -- 59
-num.names$ -- 22
-pop$ -- 80
+int.to.str$ -- 15
+missing$ -- 9
+newline$ -- 79
+num.names$ -- 30
+pop$ -- 109
 preamble$ -- 1
-purify$ -- 43
+purify$ -- 59
 quote$ -- 0
-skip$ -- 102
+skip$ -- 143
 stack$ -- 0
-substring$ -- 173
-swap$ -- 30
-text.length$ -- 2
+substring$ -- 225
+swap$ -- 47
+text.length$ -- 4
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 44
-warning$ -- 0
-while$ -- 31
-width$ -- 13
-write$ -- 121
+type$ -- 60
+warning$ -- 1
+while$ -- 42
+width$ -- 17
+write$ -- 163
+(There was 1 warning)
