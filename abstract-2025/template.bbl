@@ -1,9 +1,29 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
+
+\bibitem{8629151}
+Nikmatun Aliyah~Salsabila, Yosef Ardhito~Winatmoko, Ali Akbar~Septiandri, and Ade Jamal.
+\newblock Colloquial indonesian lexicon.
+\newblock In {\em 2018 International Conference on Asian Language Processing (IALP)}, pages 226--229, 2018.
+
+\bibitem{puppeteer}
+Google Chrome.
+\newblock Puppeteer, 2025.
+\newblock Accessed: 2025-10-27.
 
 \bibitem{CNN2024}
 {CNN Indonesia}.
 \newblock Koalisi masyarakat sipil serukan \#tolakruutni yang ancam demokrasi (civil society coalition calls for \#tolakruutni that threatens democracy).
 \newblock CNN Indonesia, 2024.
+
+\bibitem{nodejs}
+OpenJS Foundation.
+\newblock Node.js, 2025.
+\newblock Accessed: 2025-10-27.
+
+\bibitem{han-baldwin-2011-lexical}
+Bo~Han and Timothy Baldwin.
+\newblock Lexical normalisation of short text messages: Makn sens a {\#}twitter.
+\newblock In {\em Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Technologies}, pages 368--378, Portland, Oregon, USA, June 2011. Association for Computational Linguistics.
 
 \bibitem{Ilham2025}
 Ilham Hibatullah, Rizky Ichsan~Nur Rahman, Hikmal Maulana, David Utomo, Sumanto, and Andi~Diah Kuswanto.
@@ -19,5 +39,21 @@ Ilham Hibatullah, Rizky Ichsan~Nur Rahman, Hikmal Maulana, David Utomo, Sumanto,
 Adwin Nurhasananda and Mutaqin Akbar.
 \newblock Analisis sentimen masyarakat terhadap kebijakan undang-undang tentara nasional indonesia (uu tni) menggunakan support vector machine.
 \newblock {\em Jurnal Komputer, Informasi dan Teknologi}, 5(1):14, Jun. 2025.
+
+\bibitem{twitter_search_operators}
+{Twitter Developer Platform}.
+\newblock Search operators, 2025.
+\newblock Accessed: 2025-10-27.
+
+\bibitem{twitter_api_free_access_2023}
+{Twitter Developers}.
+\newblock Twitter to end free access to its api in elon musk's latest monetization push, February~2 2023.
+\newblock Accessed: 2025-10-27.
+
+\bibitem{zuraida2023effectiveness}
+Zuraida.
+\newblock Comparing the effectiveness of hashtags in digital social movements: A case study of \#percumalaporpolisi and \#polrisesuaiprosedur in indonesia.
+\newblock {\em CHANNEL: Jurnal Komunikasi}, 11(1):21--32, 2023.
+\newblock Available under CC BY-SA 4.0 license.
 
 \end{thebibliography}
