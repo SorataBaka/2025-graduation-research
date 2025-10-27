@@ -15,60 +15,18 @@
 
 本研究は, X上での公開された言説の感情分析を行うことにより, RUU TNI 2025に対する国民感情を定量化し分析することを目的とする. 具体的な目的は, 法案が最初に提案された時から正式に署名された後の数ヶ月間にわたる感情の極性の分布を測定し, 国民の不満の主な要因を特定することである. この分析は, Xの検索エンジンから取得した20万件以上のツイートからなるコーパスを使用する.
 \section{先行研究}
-The sentiment analysis of social media data, particularly regarding this specific legislative issue in Indoensia has been extensively studied with degrees of success and different methodical approaches. One study by Ilham et al (2025) were performed against 400 tweets obtained with orange data mining operation which resulted in mostly negative sentiment of over 41.5\% \cite{Ilham2025}. Another study by Adwin et al (2025) performed sentiment analysis on a time series data between 1st and the 31st of March 2025 scraped from X using the web scraping technique. The sentiment analysis itself was performed using Support Vector Machine (SVM) and evaluated using the 5-Fold Cross Validation method which resulted in an average accuracy of 78.99\% and F1-Score of 83\% \cite{Nurhasananda_Akbar_2025}.
+The sentiment analysis of social media data, particularly regarding this specific legislative issue in Indoensia has been extensively studied with degrees of success and different methodical approaches. One study by Ilham et al (2025) were performed against 400 tweets obtained with orange data mining operation which resulted in mostly negative sentiment of over 41.5\%\cite{Ilham2025}. Another study by Adwin et al (2025) performed sentiment analysis on a time series data between 1st and the 31st of March 2025 scraped from X using the web scraping technique. The sentiment analysis itself was performed using Support Vector Machine (SVM) and evaluated using the 5-Fold Cross Validation method which resulted in an average accuracy of 78.99\% and F1-Score of 83\%\cite{Nurhasananda_Akbar_2025} with 395 samples.
+Throughout previous researches found online, a common problem that was experienced by researches is the lack of quality and quantity which severely affected the accuracy of the used models or algorithms. This ``quality'' challenge is particularly pronounced in Indonesian social media data. The text retrieved is often extremely dirty which is characterized by informal slang, non-standard abbreviations, and most significantly, pervasive code-switching between Indoensian, English, and a local dialect (Javanese, Sundanese, Bataknese, etc). These complex phenomena presents a significant hurdle for standard NLP models.
 
-\subsection{サブセクション}
-必要に応じてサブセクションを設ける。しかし、紙面も限られているので本当
-にサブセクションが必要かどうかは、今一度考えてみるといいだろう。サブセ
-クションにせずとも、適切に段落分けすることで、十分読みやすい文章にする
-ことが可能な場合が多いはずだ。
-表(表~\ref{tab:sample})や図(図~\ref{fig:sample})の使い方も重要になる。
+In this study, we will be implementing data mining technique in a limited environment such as X by utilizing TF-IDF to take full advantage of X's search engine as well as data sampling methods that enables us to train a model that generalizes better over noisy and low quality data.
 
-\begin{tablehere}
-  \noindent
-  \parbox{\linewidth}{
-    \centering
-    \caption{表の挿入例}\label{tab:sample}
-    \begin{tabular}{|c|c|c|}
-      \hline
-      & jarticle & jpreprint\\
-      \hline
-      一段に収まる図 & figure環境 & figurehere環境\\
-      \hline
-      紙幅一杯の図 & figure*環境 & figure*環境\\
-      \hline
-      一段に収まる表 & table環境 & tablehere環境\\
-      \hline
-      紙幅一杯の表 & table*環境 & table*環境\\
-      \hline
-    \end{tabular}
-  }%
-\end{tablehere}
-
-\begin{figurehere}
-  \noindent
-  \parbox{\linewidth}{
-    \centering
-    \scalebox{0.5}{\includegraphics{sample.eps}}
-    \caption{図の挿入例}\label{fig:sample}
-  }%
-\end{figurehere}
-
-\section{次のセクション}
-中間発表の場合は進捗状況や今後の方向性、進め方など、本発表の場合は自分
-の研究の核心部分や実験などがこのあたりに来ることになるだろう。
-
-\begin{enumerate}
-\item あれ
-\item これ
-\item それ
-\item どれ
-\end{enumerate}
-箇条書きは紙面を食うので、必要性を慎重に考えなければならない。
-
-\section*{おわりに}
-最後に全体をまとめ、自分の研究の成果と課題をはっきりさせることが肝心と
-なる。文章全体の印象を左右することにもなるので、ここも気は抜けない。
+\section{研究方法}
+\subsection{データ収集}
+\subsection{データ全処理}
+\subsection{分析手法}
+\section{期待される結果と貢献}
+\section{行った事}
+\section{結論と今後の課題}
 
 {\small
 \bibliographystyle{plain}
