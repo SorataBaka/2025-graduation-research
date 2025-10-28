@@ -4,3 +4,6 @@
 [submodule "label-studio-ml-backend"]
 	path = label-studio-ml-backend
 	url = https://github.com/HumanSignal/label-studio-ml-backend.git
+[submodule "clustering/clustering/kamus-alay"]
+	path = clustering/clustering/kamus-alay
+	url = https://github.com/nasalsabila/kamus-alay.git
