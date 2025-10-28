@@ -4,3 +4,4 @@ out/
 tokenizers/
 models/
 results/
+__pycache__
