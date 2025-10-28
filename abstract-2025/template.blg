@@ -6,32 +6,32 @@ Database file #1: references.bib
 Warning--there's a number but no series in macqueen1967some
 You've used 15 entries,
             2118 wiz_defined-function locations,
-            579 strings with 6804 characters,
-and the built_in function-call counts, 4519 in all, are:
-= -- 434
-> -- 181
+            579 strings with 6702 characters,
+and the built_in function-call counts, 4359 in all, are:
+= -- 423
+> -- 155
 < -- 4
-+ -- 73
-- -- 58
-* -- 258
-:= -- 731
++ -- 63
+- -- 48
+* -- 237
+:= -- 701
 add.period$ -- 47
 call.type$ -- 15
-change.case$ -- 74
+change.case$ -- 69
 chr.to.int$ -- 0
 cite$ -- 16
 duplicate$ -- 182
 empty$ -- 405
-format.name$ -- 58
-if$ -- 979
+format.name$ -- 48
+if$ -- 952
 int.to.chr$ -- 0
 int.to.str$ -- 15
 missing$ -- 9
 newline$ -- 79
 num.names$ -- 30
-pop$ -- 109
+pop$ -- 104
 preamble$ -- 1
-purify$ -- 59
+purify$ -- 54
 quote$ -- 0
 skip$ -- 143
 stack$ -- 0

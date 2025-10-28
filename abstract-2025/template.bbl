@@ -15,6 +15,11 @@ Google Chrome.
 \newblock Koalisi masyarakat sipil serukan \#tolakruutni yang ancam demokrasi (civil society coalition calls for \#tolakruutni that threatens democracy).
 \newblock CNN Indonesia, 2024.
 
+\bibitem{Ilham2025}
+Ilham et~al.
+\newblock Sentiment analysis of twitter data related to the ratification of the tni bill using orange data mining.
+\newblock {\em Journal of Artificial Intelligence and Engineering Applications (JAIEA)}, 4(3):2087–2094, Jun. 2025.
+
 \bibitem{mazumder2023dataperf}
 Mazumder et~al.
 \newblock Dataperf: Benchmarks for data-centric ai development.
@@ -29,11 +34,6 @@ OpenJS Foundation.
 Bo~Han and Timothy Baldwin.
 \newblock Lexical normalisation of short text messages: Makn sens a {\#}twitter.
 \newblock In {\em Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Technologies}, pages 368--378, Portland, Oregon, USA, June 2011. Association for Computational Linguistics.
-
-\bibitem{Ilham2025}
-Ilham Hibatullah, Rizky Ichsan~Nur Rahman, Hikmal Maulana, David Utomo, Sumanto, and Andi~Diah Kuswanto.
-\newblock Sentiment analysis of twitter data related to the ratification of the tni bill using orange data mining.
-\newblock {\em Journal of Artificial Intelligence and Engineering Applications (JAIEA)}, 4(3):2087–2094, Jun. 2025.
 
 \bibitem{HRW2024}
 {Human Rights Watch}.
