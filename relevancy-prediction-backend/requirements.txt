@@ -1,4 +1,0 @@
-torch
-transformers
-scikit-learn
-accelerate

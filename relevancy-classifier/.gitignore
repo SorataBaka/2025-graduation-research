@@ -1,0 +1,7 @@
+assets/
+cache/
+out/
+tokenizers/
+models/
+results/
+__pycache__
