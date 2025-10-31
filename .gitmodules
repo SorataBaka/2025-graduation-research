@@ -7,3 +7,6 @@
 [submodule "clustering/clustering/kamus-alay"]
 	path = clustering/clustering/kamus-alay
 	url = https://github.com/nasalsabila/kamus-alay.git
+[submodule "relevancy-classifier/kamus-alay"]
+	path = relevancy-classifier/kamus-alay
+	url = https://github.com/nasalsabila/kamus-alay.git
