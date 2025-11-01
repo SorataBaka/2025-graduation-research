@@ -1,9 +1,13 @@
 interface PostRaw {
+	id: string;
 	author: string;
 	time: string;
 	content: string;
-	data: string;
-	id: string;
+	engagement: {
+		replies: number;
+		retweets: number;
+		likes: number;
+	};
 }
 type TwitterFilter =
 	| "media"
