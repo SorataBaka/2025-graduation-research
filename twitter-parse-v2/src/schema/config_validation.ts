@@ -16,6 +16,7 @@ const configvalidation = joi
 		includes: joi.array().items(joi.string()),
 		excludes: joi.array().items(joi.string()),
 		either: joi.array().items(joi.string()),
+		until: joi.date(),
 		filters: joi
 			.array()
 			.items(

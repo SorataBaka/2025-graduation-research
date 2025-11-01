@@ -54,7 +54,11 @@ export default async (
 			filters: config.filters,
 			timeline: config.timeline == 0 ? Timeline.TOP : Timeline.LATEST,
 
-			until: continue_previous ? log_data.smallest_date : undefined,
+			until: continue_previous
+				? log_data.smallest_date
+				: config.until
+				? config.until
+				: undefined,
 		}),
 		{
 			proxy_username: proxy.username,
@@ -107,7 +111,8 @@ export default async (
 					replies: config.replies,
 					mentions: config.mentions,
 					filters: config.filters,
-					timeline: config.timeline == 0 ? Timeline.TOP : Timeline.LATEST,
+					timeline:
+						config.timeline == 0 ? Timeline.TOP : Timeline.LATEST,
 					until: latestdate,
 				})
 			);
@@ -143,7 +148,6 @@ export default async (
 			const content = post.content.replace(/@[^\s]+/g, "").trim();
 			if (content.length === 0) continue;
 
-			const metrics = parseMetrics(post.data);
 			if (time.getTime() < currentSmallestDate.getTime()) {
 				currentSmallestDate = time;
 			}
@@ -153,10 +157,10 @@ export default async (
 				time: time,
 				content: content,
 				created_at: Date.now(),
-				comment_count: metrics.replies || 0,
-				like_count: metrics.likes || 0,
-				repost_count: metrics.retweets || 0,
-				view_count: metrics.views || 0,
+				comment_count: 0,
+				like_count: post.engagement.likes || 0,
+				repost_count: post.engagement.retweets || 0,
+				view_count: 0,
 			});
 		}
 		const updatelogquery = await LogModel.findOneAndUpdate(
@@ -173,7 +177,8 @@ export default async (
 		if (updatelogquery === null)
 			throw new Error("Failed to update log.. aborting");
 		consola.success(
-			"Successfully updated log with: " + updatelogquery.smallest_date.getTime()
+			"Successfully updated log with: " +
+				updatelogquery.smallest_date.getTime()
 		);
 		//Insert new data into the database.
 		try {
@@ -181,10 +186,13 @@ export default async (
 				ordered: false,
 			});
 			consola.success(
-				`Successfully pushed: ${padNumber(result.length)} Failed push: 000`
+				`Successfully pushed: ${padNumber(
+					result.length
+				)} Failed push: 000`
 			);
 		} catch (err: any) {
-			const failedIndexes = err.writeErrors?.map((e: any) => e.index) ?? [];
+			const failedIndexes =
+				err.writeErrors?.map((e: any) => e.index) ?? [];
 			// Attempt to reconstruct successful docs
 			const successDocs = cleaned.filter(
 				(_, idx) => !failedIndexes.includes(idx)

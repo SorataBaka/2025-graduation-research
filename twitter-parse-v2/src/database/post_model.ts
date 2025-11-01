@@ -42,4 +42,4 @@ const schema = new mongoose.Schema({
 export type Post = InferSchemaType<typeof schema>;
 export type PostDocument = HydratedDocument<Post>;
 
-export default mongoose.model("posts", schema);
+export default mongoose.model("post", schema);

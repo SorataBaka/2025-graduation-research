@@ -50,7 +50,10 @@ export default class TwitterParserClass {
 			this.cookies = [];
 			return;
 		}
-		const read_json = fs.readFileSync(path.resolve(this.cookie_path), "utf-8");
+		const read_json = fs.readFileSync(
+			path.resolve(this.cookie_path),
+			"utf-8"
+		);
 		const parse_json = JSON.parse(read_json);
 		if (!Array.isArray(parse_json))
 			throw new Error("cookie file is not an array");
@@ -111,9 +114,12 @@ export default class TwitterParserClass {
 		await this.page.goto(this.search_url, {
 			waitUntil: "networkidle2",
 		});
-		await this.page.waitForSelector('[aria-label="Timeline: Cari timeline"]', {
-			timeout: 5000,
-		});
+		await this.page.waitForSelector(
+			'[aria-label="Timeline: Cari timeline"]',
+			{
+				timeout: 5000,
+			}
+		);
 		await new Promise((res) => {
 			consola.log("Waiting for full load");
 			setTimeout(res, 5000);
@@ -150,73 +156,138 @@ export default class TwitterParserClass {
 	}
 	public async getPosts(): Promise<PostRaw[]> {
 		if (this.page === undefined) throw new Error("Page is still undefined");
+
+		// Define the interface so TypeScript knows the structure inside page.evaluate()
+		interface PostRaw {
+			id: string;
+			author: string;
+			time: string;
+			content: string;
+			engagement: {
+				replies: number;
+				retweets: number;
+				likes: number;
+			};
+		}
+
 		return (await this.page.evaluate(
 			(parse_limit, scroll_timeout) => {
-				return new Promise<PostRaw[]>((resolve) => {
-					const newData: PostRaw[] = [];
-					setTimeout(() => resolve(newData), scroll_timeout);
+				// FIX: We must wrap the logic in a Promise to access resolve/reject
+				return new Promise<PostRaw[]>((resolve, reject) => {
+					const newData: PostRaw[] = []; // FIX: Explicitly type the array
+					const seenPostIds = new Set<string>();
+					const clearFunc = (dataToResolve: PostRaw[]) => {
+						observer.disconnect();
+						resolve(dataToResolve);
+					};
+					const timeoutId = setTimeout(() => {
+						clearFunc(newData); // FIX: resolve(newData) is now safe inside clearFunc
+					}, scroll_timeout);
 					const observer = new MutationObserver((mutations) => {
 						mutations.forEach((mutation) => {
 							mutation.addedNodes.forEach((node) => {
 								if (node.nodeType !== Node.ELEMENT_NODE) return;
 								const elementNode = node as HTMLElement;
-								const insideContent = elementNode.querySelector(
-									"div > div > article > div div:nth-of-type(2) > div:nth-of-type(2)"
-								);
-								if (!insideContent) return;
-								const author = insideContent.querySelector(
-									"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(1) > a > div > span"
-								)?.textContent;
-								if (author === null || author === undefined) return;
-								const postid = insideContent
-									.querySelector(
-										"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a"
-									)
-									?.getAttribute("href")
-									?.split("/")
-									.slice(-1)[0] as string;
 
+								const tweet = elementNode.querySelector(
+									'[data-testid="tweet"]'
+								);
+								if (!tweet) return;
+
+								if (
+									tweet.querySelector(
+										'[data-testid="promotedTweet"]'
+									)
+								)
+									return;
+
+								const linkElement = tweet
+									.querySelector('a[href*="/status/"] time')
+									?.closest("a");
+								const href = linkElement?.getAttribute("href");
+								const postId = href?.split("/").pop();
+
+								if (!postId || seenPostIds.has(postId)) return;
+
+								// --- Simplified Parsing Logic ---
+								const author =
+									tweet.querySelector(
+										'[data-testid="User-Name"]'
+									)?.textContent ?? "Unknown Author";
 								const time =
-									insideContent
-										.querySelector(
-											"div:nth-of-type(1) > div > div:nth-of-type(1) > div > div > div:nth-of-type(2) > div > div:nth-of-type(3) > a > time"
-										)
-										?.getAttribute("datetime") || "DATEUNDEFINED";
-								const contentSpans = insideContent.children;
-								let content: string[] = [];
-								for (let i = 1; i < contentSpans.length - 1; i++) {
-									const textContent = contentSpans[i].textContent as string;
-									if (!textContent.match(/^Membalas @/))
-										content.push(contentSpans[i].textContent as string);
-								}
-								if (content.length === 0) return;
-								const postDataDiv =
-									insideContent.children[insideContent.children.length - 1]
-										.querySelector("div:nth-of-type(1) > div")
-										?.getAttribute("aria-label") || "";
-								console.log(content.join(""));
+									tweet
+										.querySelector("time[datetime]")
+										?.getAttribute("datetime") ??
+									"DATEUNDEFINED";
+
+								// Click "Show More"
+								const showMoreButton = tweet.querySelector(
+									'[data-testid="tweet-text-show-more-button"]'
+								) as HTMLElement;
+								if (showMoreButton) showMoreButton.click();
+
+								const content =
+									tweet.querySelector(
+										'[data-testid="tweetText"]'
+									)?.textContent ?? "";
+
+								// Engagement parsing (Assuming parseEngagementValue is available/inlined)
+								const parseEngagementValue = (
+									text: string | null | undefined
+								): number => {
+									if (!text) return 0;
+									const textLower = text.toLowerCase();
+									const num = parseFloat(
+										text.replace(/,/g, "")
+									);
+									if (textLower.endsWith("k"))
+										return Math.floor(num * 1000);
+									if (textLower.endsWith("m"))
+										return Math.floor(num * 1000000);
+									return num;
+								};
+
+								const replies = parseEngagementValue(
+									tweet.querySelector('[data-testid="reply"]')
+										?.textContent
+								);
+								const retweets = parseEngagementValue(
+									tweet.querySelector(
+										'[data-testid="retweet"]'
+									)?.textContent
+								);
+								const likes = parseEngagementValue(
+									tweet.querySelector('[data-testid="like"]')
+										?.textContent
+								);
+
+								// --- Add Data and Check Limit ---
+								seenPostIds.add(postId);
 								newData.push({
+									id: postId,
 									author: author,
 									time: time,
-									content: content.join(""),
-									data: postDataDiv,
-									id: postid,
+									content: content,
+									engagement: { replies, retweets, likes },
 								});
+
+								if (newData.length >= parse_limit) {
+									clearFunc(newData); // FIX: resolve(newData) is now safe inside clearFunc
+								}
 							});
 						});
-						if (newData.length >= parse_limit) {
-							observer.disconnect();
-							resolve(newData);
-							return;
-						}
 					});
+
 					const container = document.querySelector(
 						'[aria-label="Timeline: Cari timeline"] > div'
 					);
-					if (container === null) throw new Error("Element couldn't be found");
-					observer.observe(container, {
-						childList: true,
-					});
+
+					if (container === null) {
+						reject(new Error("Element couldn't be found"));
+						return;
+					}
+
+					observer.observe(container, { childList: true });
 				});
 			},
 			this.parse_limit,
