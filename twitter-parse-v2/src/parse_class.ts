@@ -155,9 +155,8 @@ export default class TwitterParserClass {
 		await this.page.evaluate(() => window.scrollBy(0, 100));
 	}
 	public async getPosts(): Promise<PostRaw[]> {
-		if (this.page === undefined) throw new Error("Page is still undefined");
+		if (!this.page) throw new Error("Page is still undefined");
 
-		// Define the interface so TypeScript knows the structure inside page.evaluate()
 		interface PostRaw {
 			id: string;
 			author: string;
@@ -172,122 +171,138 @@ export default class TwitterParserClass {
 
 		return (await this.page.evaluate(
 			(parse_limit, scroll_timeout) => {
-				// FIX: We must wrap the logic in a Promise to access resolve/reject
 				return new Promise<PostRaw[]>((resolve, reject) => {
-					const newData: PostRaw[] = []; // FIX: Explicitly type the array
+					const newData: PostRaw[] = [];
 					const seenPostIds = new Set<string>();
+
+					let lastMutationTime = Date.now();
+					const INACTIVITY_LIMIT = 8000; // 8s before checking retry/end
+					const MAX_RETRIES = 10;
+					const RETRY_DELAY = 30000; // 30s
+					let retryCount = 0;
+					let retryCooldown = false; // prevents instant re-clicking
+
 					const clearFunc = (dataToResolve: PostRaw[]) => {
-						observer.disconnect();
+						try {
+							observer.disconnect();
+						} catch {}
+						clearInterval(inactivityCheck);
 						resolve(dataToResolve);
 					};
-					const timeoutId = setTimeout(() => {
-						clearFunc(newData); // FIX: resolve(newData) is now safe inside clearFunc
-					}, scroll_timeout);
+
+					// ✅ Retry only max 10 times, with 30s cooldown between retries
+					const clickRetryIfExists = () => {
+						if (retryCooldown) return false;
+
+						const retryBtn =
+							document.querySelector('[data-testid="error-retry"]') ||
+							[...document.querySelectorAll("button")].find((b) =>
+								b.textContent?.toLowerCase().includes("coba lagi") ||
+								b.textContent?.toLowerCase().includes("retry")
+							);
+
+						if (retryBtn) {
+							if (retryCount >= MAX_RETRIES) {
+								console.warn(`⚠ Max retries (${MAX_RETRIES}) reached — stopping retries.`);
+								return false;
+							}
+
+							console.warn(`⚠ Connection issue — retrying (${retryCount + 1}/${MAX_RETRIES})`);
+							(retryBtn as HTMLElement).click();
+							retryCount++;
+							retryCooldown = true;
+							lastMutationTime = Date.now();
+
+							setTimeout(() => {
+								retryCooldown = false;
+							}, RETRY_DELAY);
+
+							return true;
+						}
+						return false;
+					};
+
+					// ✅ Watchdog for timeline freeze or actual end
+					const inactivityCheck = setInterval(() => {
+						const elapsed = Date.now() - lastMutationTime;
+						if (elapsed > INACTIVITY_LIMIT) {
+							if (!clickRetryIfExists()) {
+								console.log("✅ No more tweets — finishing.");
+								clearFunc(newData);
+							}
+						}
+					}, 1000);
+
+					// ✅ Hard stop after scroll_timeout
+					setTimeout(() => clearFunc(newData), scroll_timeout);
+
 					const observer = new MutationObserver((mutations) => {
-						mutations.forEach((mutation) => {
-							mutation.addedNodes.forEach((node) => {
-								if (node.nodeType !== Node.ELEMENT_NODE) return;
-								const elementNode = node as HTMLElement;
+						// ✅ New activity = reset retry attempts
+						retryCount = 0;
+						lastMutationTime = Date.now();
 
-								const tweet = elementNode.querySelector(
-									'[data-testid="tweet"]'
-								);
-								if (!tweet) return;
+						for (const mutation of mutations) {
+							for (const node of mutation.addedNodes) {
+								if (node.nodeType !== Node.ELEMENT_NODE) continue;
+								const tweet = (node as HTMLElement).querySelector('[data-testid="tweet"]');
+								if (!tweet) continue;
+								if (tweet.querySelector('[data-testid="promotedTweet"]')) continue;
 
-								if (
-									tweet.querySelector(
-										'[data-testid="promotedTweet"]'
-									)
-								)
-									return;
+								const link = tweet.querySelector('a[href*="/status/"] time')?.closest("a");
+								const postId = link?.getAttribute("href")?.split("/").pop();
+								if (!postId || seenPostIds.has(postId)) continue;
 
-								const linkElement = tweet
-									.querySelector('a[href*="/status/"] time')
-									?.closest("a");
-								const href = linkElement?.getAttribute("href");
-								const postId = href?.split("/").pop();
-
-								if (!postId || seenPostIds.has(postId)) return;
-
-								// --- Simplified Parsing Logic ---
 								const author =
-									tweet.querySelector(
-										'[data-testid="User-Name"]'
-									)?.textContent ?? "Unknown Author";
+									tweet.querySelector('[data-testid="User-Name"]')?.textContent ||
+									"Unknown Author";
 								const time =
-									tweet
-										.querySelector("time[datetime]")
-										?.getAttribute("datetime") ??
+									tweet.querySelector("time[datetime]")?.getAttribute("datetime") ||
 									"DATEUNDEFINED";
 
-								// Click "Show More"
-								const showMoreButton = tweet.querySelector(
+								const showMore = tweet.querySelector(
 									'[data-testid="tweet-text-show-more-button"]'
 								) as HTMLElement;
-								if (showMoreButton) showMoreButton.click();
+								if (showMore) showMore.click();
 
 								const content =
-									tweet.querySelector(
-										'[data-testid="tweetText"]'
-									)?.textContent ?? "";
+									tweet.querySelector('[data-testid="tweetText"]')?.textContent || "";
 
-								// Engagement parsing (Assuming parseEngagementValue is available/inlined)
-								const parseEngagementValue = (
-									text: string | null | undefined
-								): number => {
+								const parseEngValue = (text: string | null | undefined) => {
 									if (!text) return 0;
-									const textLower = text.toLowerCase();
-									const num = parseFloat(
-										text.replace(/,/g, "")
-									);
-									if (textLower.endsWith("k"))
-										return Math.floor(num * 1000);
-									if (textLower.endsWith("m"))
-										return Math.floor(num * 1000000);
+									const lower = text.toLowerCase();
+									const num = parseFloat(text.replace(/,/g, ""));
+									if (lower.endsWith("k")) return Math.floor(num * 1000);
+									if (lower.endsWith("m")) return Math.floor(num * 1_000_000);
 									return num;
 								};
 
-								const replies = parseEngagementValue(
-									tweet.querySelector('[data-testid="reply"]')
-										?.textContent
-								);
-								const retweets = parseEngagementValue(
-									tweet.querySelector(
-										'[data-testid="retweet"]'
-									)?.textContent
-								);
-								const likes = parseEngagementValue(
-									tweet.querySelector('[data-testid="like"]')
-										?.textContent
-								);
+								const replies = parseEngValue(tweet.querySelector('[data-testid="reply"]')?.textContent);
+								const retweets = parseEngValue(tweet.querySelector('[data-testid="retweet"]')?.textContent);
+								const likes = parseEngValue(tweet.querySelector('[data-testid="like"]')?.textContent);
 
-								// --- Add Data and Check Limit ---
 								seenPostIds.add(postId);
 								newData.push({
 									id: postId,
-									author: author,
-									time: time,
-									content: content,
+									author,
+									time,
+									content,
 									engagement: { replies, retweets, likes },
 								});
 
 								if (newData.length >= parse_limit) {
-									clearFunc(newData); // FIX: resolve(newData) is now safe inside clearFunc
+									clearFunc(newData);
+									return;
 								}
-							});
-						});
+							}
+						}
 					});
 
-					const container = document.querySelector(
-						'[aria-label="Timeline: Cari timeline"] > div'
-					);
-
-					if (container === null) {
-						reject(new Error("Element couldn't be found"));
+					const container = document.querySelector('[aria-label="Timeline: Cari timeline"] > div');
+					if (!container) {
+						reject(new Error("Timeline container not found"));
 						return;
 					}
-
-					observer.observe(container, { childList: true });
+					observer.observe(container, { childList: true, subtree: true });
 				});
 			},
 			this.parse_limit,
@@ -328,23 +343,39 @@ export default class TwitterParserClass {
 		if (options.replies) querybuilder.push(`to:${options.replies}`);
 		if (options.mentions) querybuilder.push(`@${options.mentions}`);
 		if (options.exact) querybuilder.push(`"${options.exact}"`);
-		if (Array.isArray(options.includes) && options.includes.length != 0) {
+		if (Array.isArray(options.includes) && options.includes.length > 0) {
 			for (const words of options.includes) {
-				querybuilder.push(`"${words}"`);
+				querybuilder.push(words.includes(" ") ? words : words);
 			}
 		}
-		if (Array.isArray(options.excludes) && options.excludes.length != 0) {
+
+		if (Array.isArray(options.excludes) && options.excludes.length > 0) {
 			for (const words of options.excludes) {
-				querybuilder.push(`-"${words}"`);
+				querybuilder.push(words.includes(" ") ? `-${words}` : `-${words}`);
 			}
 		}
+		// Handle "either" (OR group)
 		if (Array.isArray(options.either) && options.either.length > 0) {
-			const cleanedoptions = options.either.map((token) => `"${token}"`);
-			querybuilder.push(`(${cleanedoptions.join(" OR ")})`);
+			// Only quote tokens that contain spaces or special characters
+			const cleanedTokens = options.either.map((token) => {
+				const trimmed = token.trim();
+
+				// Escape internal double quotes to avoid breaking the query
+				const safe = trimmed.replace(/"/g, '\\"');
+
+				// Quote only if it contains spaces or is a multi-word phrase
+				return /\s/.test(safe) ? safe : safe;
+			});
+
+			querybuilder.push(`(${cleanedTokens.join(" OR ")})`);
 		}
+
+		// Handle filters
 		if (Array.isArray(options.filters) && options.filters.length > 0) {
 			for (const filter of options.filters) {
-				querybuilder.push(`filter:${filter.toLowerCase()}`);
+				if (typeof filter === "string" && filter.trim() !== "") {
+					querybuilder.push(`filter:${filter.toLowerCase().trim()}`);
+				}
 			}
 		}
 		if (options.since !== undefined) {

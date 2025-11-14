@@ -26,6 +26,8 @@ export default async (
 			mentions: config.mentions,
 			filters: config.filters,
 			timeline: config.timeline == 0 ? Timeline.TOP : Timeline.LATEST,
+			since: config.since,
+			until: config.until,
 		},
 		{
 			parse_limit: config.parse_limit,
