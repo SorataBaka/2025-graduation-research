@@ -11,7 +11,7 @@ ds = load_dataset("tianharjuno/twitter-parse", cache_dir="cache/")
 # In[2]:
 
 
-ds_test = ds["test"]
+ds_test = ds["train"]
 
 
 # In[4]:
@@ -35,6 +35,7 @@ You are a high-speed, accurate data-labeling bot. Your ONLY task is to analyze a
 2.  DO NOT include any other text, explanations, apologies, or markdown formatting (like ```json).
 3.  The JSON MUST have these three keys: `is_related_to_ruu_tni` (boolean), `confidence` (float), `reasoning` (string).
 4.  The `confidence` value MUST be a float (e.g., 1.0, 0.5).
+5. ALWAYS double check your answer against the established rule. Make sure the reasoning and given label is related to each other.
 
 ---
 
@@ -141,8 +142,10 @@ def label_text(row):
         if content_string.startswith("```json"):
             content_string = content_string[7:-3].strip()
         label = TweetLabel.model_validate_json(content_string)
-        row["related"] = label.is_related_to_ruu_tni
-        row["confidence"] = label.confidence
+        print(f"CONTENT: {text}")
+        print(f"RELEVANT: {label}")
+        print("====================================")
+        row["relevant"] = label.is_related_to_ruu_tni
         return row
     except ValidationError as e:
         print(f"VALIDATION ERROR: LLM returned malformed JSON.\n{e}")
@@ -168,5 +171,5 @@ new_ds = load_dataset("tianharjuno/twitter-parse", cache_dir="cache/")
 # ds_1000 = ... 
 
 # 3. Add your new split to the DatasetDict
-new_ds["test"] = ds_test
-new_ds.push_to_hub("tianharjuno/twitter-parse", commit_description="Labeled 1000 set data using llama")
+new_ds["train"] = ds_test
+new_ds.push_to_hub("tianharjuno/twitter-parse", commit_message="Labeled train set data using llama")
