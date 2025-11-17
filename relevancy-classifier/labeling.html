@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Correction Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple transition for hover */
+        tr:hover { background-color: #f9fafb; }
+
+        /* Fix table header */
+        .table-container {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans p-4 md:p-8">
+
+    <div class="max-w-screen-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="mb-6 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Label Correction Suite</h1>
+            <p class="text-gray-600">Load, filter, and correct your LLM-generated labels.</p>
+        </div>
+
+        <div class="flex flex-col md:flex-row md:space-x-6">
+
+            <!-- Sidebar (Filters & Controls) -->
+            <div class="md:w-1/4 mb-6 md:mb-0">
+                <div class="bg-white p-6 rounded-lg shadow-lg space-y-6">
+
+                    <!-- File Loader -->
+                    <div>
+                        <label for="file-loader" class="block text-sm font-medium text-gray-700 mb-2">1. Load Data File</label>
+                        <input type="file" id="file-loader" accept=".json" class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-md file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-blue-50 file:text-blue-700
+                            hover:file:bg-blue-100 cursor-pointer"/>
+                        <p class="text-xs text-gray-500 mt-1">Upload the `data_for_suite.json` file.</p>
+                    </div>
+
+                    <!-- Filters -->
+                    <div>
+                        <label for="cluster-filter" class="block text-sm font-medium text-gray-700 mb-2">2. Filter by Cluster</label>
+                        <select id="cluster-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">All Clusters</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="label-filter" class="block text-sm font-medium text-gray-700 mb-2">3. Filter by Label</label>
+                        <select id="label-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">All Labels</option>
+                            <option value="0">Relevant (0)</option>
+                            <option value="1">Irrelevant (1)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">4. Filter by Status</label>
+                        <select id="status-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">All Items</option>
+                            <option value="uncorrected">Uncorrected</option>
+                            <option value="corrected">Corrected</option>
+                        </select>
+                    </div>
+
+                    <!-- Export Button -->
+                    <div>
+                        <label for="export-button" class="block text-sm font-medium text-gray-700 mb-2">5. Export Data</label>
+                        <button id="export-button" disabled class="w-full py-2 px-4 bg-gray-400 text-white font-semibold rounded-md shadow-sm cursor-not-allowed">
+                            Export Corrected Data
+                        </button>
+                        <p class="text-xs text-gray-500 mt-1">Downloads a new JSON file with all your changes.</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Main Content (Data Table) -->
+            <div class="md:w-3/4">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div id="stats" class="mb-4 text-sm text-gray-600">
+                        Please load a file to begin.
+                    </div>
+                    <div class="table-container border rounded-lg">
+                        <table class="w-full text-sm text-left text-gray-700">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th scope="col" class="p-3 w-16">ID</th>
+                                    <th scope="col" class="p-3 w-20">Cluster</th>
+                                    <th scope="col" class="p-3 w-20">Prob.</th>
+                                    <th scope="col" class="p-3 w-1/2">Text</th>
+                                    <th scope="col" class="p-3 w-24">Current Label</th>
+                                    <th scope="col" class="p-3 w-40">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-table-body" class="divide-y">
+                                <!-- Rows will be injected by JavaScript -->
+                                <tr id="placeholder-row">
+                                    <td colspan="6" class="p-6 text-center text-gray-400">No data loaded.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global State ---
+        let globalData = [];
+        const CLASS_MAP = { 0: "Relevant", 1: "Irrelevant" };
+        const LABEL_COLORS = {
+            0: "bg-blue-100 text-blue-800",
+            1: "bg-purple-100 text-purple-800"
+        };
+        const STATUS_COLORS = {
+            uncorrected: "bg-white",
+            corrected: "bg-green-50"
+        };
+        const ACTION_BUTTON_CLASSES = "py-1 px-3 text-xs font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1";
+        const FIX_BUTTON_CLASSES = "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500";
+        const REVERT_BUTTON_CLASSES = "bg-yellow-400 text-gray-800 hover:bg-yellow-500 focus:ring-yellow-500";
+
+
+        // --- DOM Elements ---
+        const fileLoader = document.getElementById('file-loader');
+        const clusterFilter = document.getElementById('cluster-filter');
+        const labelFilter = document.getElementById('label-filter');
+        const statusFilter = document.getElementById('status-filter');
+        const exportButton = document.getElementById('export-button');
+        const tableBody = document.getElementById('data-table-body');
+        const statsDisplay = document.getElementById('stats');
+        const placeholderRow = document.getElementById('placeholder-row');
+
+        // --- Event Listeners ---
+        fileLoader.addEventListener('change', handleFileLoad);
+        clusterFilter.addEventListener('change', renderTable);
+        labelFilter.addEventListener('change', renderTable);
+        statusFilter.addEventListener('change', renderTable);
+        exportButton.addEventListener('click', handleExport);
+
+        // --- Logic ---
+
+        function handleFileLoad(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    globalData = JSON.parse(e.target.result);
+                    if (!Array.isArray(globalData) || globalData.length === 0) {
+                        throw new Error("Data is not a valid JSON array or is empty.");
+                    }
+                    // Ensure all required fields are present
+                    const firstItem = globalData[0];
+                    if (!('id' in firstItem && 'cluster' in firstItem && 'content' in firstItem && 'label' in firstItem && 'status' in firstItem)) {
+                         throw new Error("JSON is missing required fields: id, cluster, content, label, status.");
+                    }
+
+                    placeholderRow.classList.add('hidden');
+                    populateFilters();
+                    renderTable();
+                    exportButton.disabled = false;
+                    exportButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    exportButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                } catch (err) {
+                    statsDisplay.textContent = `Error: ${err.message}`;
+                    globalData = [];
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function populateFilters() {
+            // Clear existing options (except 'All')
+            clusterFilter.innerHTML = '<option value="all">All Clusters</option>';
+
+            const clusters = new Set(globalData.map(item => item.cluster));
+            const sortedClusters = Array.from(clusters).sort((a, b) => a - b);
+
+            for (const clusterId of sortedClusters) {
+                const option = document.createElement('option');
+                option.value = clusterId;
+                option.textContent = clusterId === -1 ? "Noise (-1)" : `Cluster ${clusterId}`;
+                clusterFilter.appendChild(option);
+            }
+        }
+
+        function renderTable() {
+            // 1. Get filter values
+            const clusterVal = clusterFilter.value;
+            const labelVal = labelFilter.value;
+            const statusVal = statusFilter.value;
+
+            // 2. Apply filters
+            const filteredData = globalData.filter(item => {
+                const clusterMatch = clusterVal === 'all' || item.cluster.toString() === clusterVal;
+                const labelMatch = labelVal === 'all' || item.label.toString() === labelVal;
+                const statusMatch = statusVal === 'all' || item.status === statusVal;
+                return clusterMatch && labelMatch && statusMatch;
+            });
+
+            // 3. Clear table
+            tableBody.innerHTML = '';
+
+            // 4. Update stats
+            updateStats(filteredData.length, globalData.length);
+
+            // 5. Render rows
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">No items match your filters.</td></tr>';
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            for (const item of filteredData) {
+                const row = document.createElement('tr');
+                row.className = `${STATUS_COLORS[item.status]} transition-colors duration-150 ease-in-out`;
+
+                const labelName = CLASS_MAP[item.label] || 'Unknown';
+                const labelColor = LABEL_COLORS[item.label] || 'bg-gray-100';
+
+                const truncatedText = (item.content.length > 200) ? item.content.substring(0, 200) + '...' : item.content;
+
+                // Create Action Button
+                const actionButton = document.createElement('button');
+                actionButton.className = `${ACTION_BUTTON_CLASSES}`;
+
+                if (item.status === 'uncorrected') {
+                    const targetLabel = item.label === 0 ? 1 : 0;
+                    actionButton.textContent = `Set to ${CLASS_MAP[targetLabel]} (${targetLabel})`;
+                    actionButton.classList.add(...FIX_BUTTON_CLASSES.split(' '));
+                } else {
+                    actionButton.textContent = `Revert to ${CLASS_MAP[item.original_label]}`;
+                    actionButton.classList.add(...REVERT_BUTTON_CLASSES.split(' '));
+                }
+
+                actionButton.onclick = () => handleLabelFix(item.id);
+
+                row.innerHTML = `
+                    <td class="p-3 font-medium text-gray-500">${item.id}</td>
+                    <td class="p-3 font-semibold">${item.cluster}</td>
+                    <td class="p-3 text-gray-600">${item.probability.toFixed(4)}</td>
+                    <td class="p-3 text-gray-800">${truncatedText}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${labelColor}">
+                            ${labelName} (${item.label})
+                        </span>
+                    </td>
+                    <td class="p-3"></td>
+                `;
+
+                row.lastElementChild.appendChild(actionButton);
+                fragment.appendChild(row);
+            }
+            tableBody.appendChild(fragment);
+        }
+
+        function updateStats(filteredCount, totalCount) {
+            const correctedCount = globalData.filter(d => d.status === 'corrected').length;
+            statsDisplay.innerHTML = `
+                Showing <strong class="text-blue-600">${filteredCount}</strong> of
+                <strong class="text-gray-800">${totalCount}</strong> items. |
+                <strong class="text-green-600">${correctedCount}</strong> items corrected.
+            `;
+        }
+
+        function handleLabelFix(id) {
+            const item = globalData.find(d => d.id === id);
+            if (!item) return;
+
+            if (item.status === 'uncorrected') {
+                item.label = item.label === 0 ? 1 : 0; // Flip the label
+                item.status = 'corrected';
+            } else {
+                item.label = item.original_label; // Revert to original
+                item.status = 'uncorrected';
+            }
+
+            // Re-render the table to reflect the change
+            renderTable();
+        }
+
+        function handleExport() {
+            const dataStr = JSON.stringify(globalData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data_corrected.json';
+            document.body.appendChild(a);
+a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+    </script>
+</body>
+</html>
