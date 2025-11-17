@@ -159,7 +159,9 @@ class DreamCluster:
             core_dist_n_jobs=1,
             cluster_selection_method="eom",
             gen_min_span_tree=True,
+            prediction_data=True
         )
+        self.clusterer.fit(opt_embeddings)
         return best_min_samples, best_min_cluster_size
 
     @staticmethod
