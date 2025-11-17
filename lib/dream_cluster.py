@@ -147,10 +147,9 @@ class DreamCluster:
             )
             best_min_samples, best_min_cluster_size = optimization_result.x
 
-        print(
-            f"Final params: min_samples={best_min_samples}, min_cluster_size={best_min_cluster_size}"
-        )
-
+        print("Transforming full dataset with trained reducers...")
+        full_reduced_embeddings_1 = self.first_reductor.transform(embeddings)
+        full_reduced_embeddings_final = self.second_reductor.transform(full_reduced_embeddings_1)
         self.clusterer = HDBSCAN(
             min_cluster_size=best_min_cluster_size,
             min_samples=best_min_samples,
@@ -161,7 +160,9 @@ class DreamCluster:
             gen_min_span_tree=True,
             prediction_data=True
         )
-        self.clusterer.fit(opt_embeddings)
+        print("Fitting final clusterer on full reduced dataset...")
+        self.clusterer.fit(full_reduced_embeddings_final) 
+        
         return best_min_samples, best_min_cluster_size
 
     @staticmethod
