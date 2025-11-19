@@ -3,21 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Label Correction Suite</title>
+    <title>Label Correction Suite v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Simple transition for hover */
-        tr:hover { background-color: #f9fafb; }
+        tbody tr:hover { background-color: #f9fafb; }
 
         /* Fix table header */
         .table-container {
-            max-height: 80vh;
+            max-height: 75vh;
             overflow-y: auto;
         }
         thead th {
             position: sticky;
             top: 0;
             background-color: #f3f4f6; /* bg-gray-100 */
+            z-index: 10;
+        }
+
+        /* Style for the bulk action bar */
+        #bulk-action-bar {
+            position: sticky;
+            top: 41px; /* Height of the header row */
+            z-index: 9;
         }
 
         /* Custom scrollbar */
@@ -34,7 +42,7 @@
         <!-- Header -->
         <div class="mb-6 text-center">
             <h1 class="text-3xl font-bold text-gray-800">Label Correction Suite</h1>
-            <p class="text-gray-600">Load, filter, and correct your LLM-generated labels.</p>
+            <p class="text-gray-600">Load, filter, search, and bulk-correct your LLM-generated labels.</p>
         </div>
 
         <div class="flex flex-col md:flex-row md:space-x-6">
@@ -81,9 +89,16 @@
                         </select>
                     </div>
 
+                    <!-- Search Bar -->
+                    <div>
+                        <label for="search-bar" class="block text-sm font-medium text-gray-700 mb-2">5. Search Content</label>
+                        <input type="text" id="search-bar" placeholder="Enter keywords..." class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+
                     <!-- Export Button -->
                     <div>
-                        <label for="export-button" class="block text-sm font-medium text-gray-700 mb-2">5. Export Data</label>
+                        <label for="export-button" class="block text-sm font-medium text-gray-700 mb-2">6. Export Data</label>
                         <button id="export-button" disabled class="w-full py-2 px-4 bg-gray-400 text-white font-semibold rounded-md shadow-sm cursor-not-allowed">
                             Export Corrected Data
                         </button>
@@ -103,18 +118,34 @@
                         <table class="w-full text-sm text-left text-gray-700">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
+                                    <th scope="col" class="p-3 w-12">
+                                        <input type="checkbox" id="select-all-checkbox" title="Select all visible items" class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                                    </th>
                                     <th scope="col" class="p-3 w-16">ID</th>
                                     <th scope="col" class="p-3 w-20">Cluster</th>
                                     <th scope="col" class="p-3 w-20">Prob.</th>
-                                    <th scope="col" class="p-3 w-1/2">Text</th>
+                                    <th scope="col" class="p-3 w-1/2">Content</th>
                                     <th scope="col" class="p-3 w-24">Current Label</th>
                                     <th scope="col" class="p-3 w-40">Actions</th>
                                 </tr>
                             </thead>
+                            <!-- Bulk Action Bar -->
+                            <tbody id="bulk-action-bar" class="hidden">
+                                <tr class="bg-blue-50 border-b">
+                                    <td colspan="7" class="p-3">
+                                        <div class="flex items-center space-x-4">
+                                            <span id="bulk-select-count" class="text-sm font-medium text-blue-800">0 items selected</span>
+                                            <button id="bulk-set-relevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Set as Relevant (0)</button>
+                                            <button id="bulk-set-irrelevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700">Set as Irrelevant (1)</button>
+                                            <button id="bulk-revert" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-gray-800 bg-yellow-400 hover:bg-yellow-500">Revert Selected</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
                             <tbody id="data-table-body" class="divide-y">
                                 <!-- Rows will be injected by JavaScript -->
                                 <tr id="placeholder-row">
-                                    <td colspan="6" class="p-6 text-center text-gray-400">No data loaded.</td>
+                                    <td colspan="7" class="p-6 text-center text-gray-400">No data loaded.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -127,6 +158,8 @@
     <script>
         // --- Global State ---
         let globalData = [];
+        let currentFilteredData = [];
+        let selectedItems = new Set();
         const CLASS_MAP = { 0: "Relevant", 1: "Irrelevant" };
         const LABEL_COLORS = {
             0: "bg-blue-100 text-blue-800",
@@ -146,17 +179,33 @@
         const clusterFilter = document.getElementById('cluster-filter');
         const labelFilter = document.getElementById('label-filter');
         const statusFilter = document.getElementById('status-filter');
+        const searchBar = document.getElementById('search-bar');
         const exportButton = document.getElementById('export-button');
         const tableBody = document.getElementById('data-table-body');
         const statsDisplay = document.getElementById('stats');
         const placeholderRow = document.getElementById('placeholder-row');
+
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const bulkActionBar = document.getElementById('bulk-action-bar');
+        const bulkSelectCount = document.getElementById('bulk-select-count');
+        const bulkSetRelevant = document.getElementById('bulk-set-relevant');
+        const bulkSetIrrelevant = document.getElementById('bulk-set-irrelevant');
+        const bulkRevert = document.getElementById('bulk-revert');
 
         // --- Event Listeners ---
         fileLoader.addEventListener('change', handleFileLoad);
         clusterFilter.addEventListener('change', renderTable);
         labelFilter.addEventListener('change', renderTable);
         statusFilter.addEventListener('change', renderTable);
+        searchBar.addEventListener('input', renderTable); // Fuzzy search
         exportButton.addEventListener('click', handleExport);
+
+        // Bulk action listeners
+        selectAllCheckbox.addEventListener('change', handleSelectAll);
+        tableBody.addEventListener('change', handleRowCheckbox); // Event delegation
+        bulkSetRelevant.addEventListener('click', () => handleBulkFix(0));
+        bulkSetIrrelevant.addEventListener('click', () => handleBulkFix(1));
+        bulkRevert.addEventListener('click', handleBulkRevert);
 
         // --- Logic ---
 
@@ -171,7 +220,8 @@
                     if (!Array.isArray(globalData) || globalData.length === 0) {
                         throw new Error("Data is not a valid JSON array or is empty.");
                     }
-                    // Ensure all required fields are present
+
+                    // --- VALIDATION: Check for 'content' field ---
                     const firstItem = globalData[0];
                     if (!('id' in firstItem && 'cluster' in firstItem && 'content' in firstItem && 'label' in firstItem && 'status' in firstItem)) {
                          throw new Error("JSON is missing required fields: id, cluster, content, label, status.");
@@ -192,9 +242,7 @@
         }
 
         function populateFilters() {
-            // Clear existing options (except 'All')
             clusterFilter.innerHTML = '<option value="all">All Clusters</option>';
-
             const clusters = new Set(globalData.map(item => item.cluster));
             const sortedClusters = Array.from(clusters).sort((a, b) => a - b);
 
@@ -211,35 +259,47 @@
             const clusterVal = clusterFilter.value;
             const labelVal = labelFilter.value;
             const statusVal = statusFilter.value;
+            const searchVal = searchBar.value.toLowerCase(); // Search value
 
             // 2. Apply filters
-            const filteredData = globalData.filter(item => {
+            currentFilteredData = globalData.filter(item => {
                 const clusterMatch = clusterVal === 'all' || item.cluster.toString() === clusterVal;
                 const labelMatch = labelVal === 'all' || item.label.toString() === labelVal;
                 const statusMatch = statusVal === 'all' || item.status === statusVal;
-                return clusterMatch && labelMatch && statusMatch;
+                // --- SEARCH LOGIC ---
+                const searchMatch = searchVal === '' || (item.content && item.content.toLowerCase().includes(searchVal));
+
+                return clusterMatch && labelMatch && statusMatch && searchMatch;
             });
 
             // 3. Clear table
             tableBody.innerHTML = '';
 
             // 4. Update stats
-            updateStats(filteredData.length, globalData.length);
+            updateStats(currentFilteredData.length, globalData.length);
 
-            // 5. Render rows
-            if (filteredData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">No items match your filters.</td></tr>';
+            // 5. Update "Select All" checkbox state
+            selectAllCheckbox.checked = currentFilteredData.length > 0 && currentFilteredData.every(item => selectedItems.has(item.id));
+            selectAllCheckbox.indeterminate = currentFilteredData.length > 0 &&
+                                              currentFilteredData.some(item => selectedItems.has(item.id)) &&
+                                              !selectAllCheckbox.checked;
+
+
+            // 6. Render rows
+            if (currentFilteredData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400">No items match your filters.</td></tr>';
                 return;
             }
 
             const fragment = document.createDocumentFragment();
-            for (const item of filteredData) {
+            for (const item of currentFilteredData) {
                 const row = document.createElement('tr');
                 row.className = `${STATUS_COLORS[item.status]} transition-colors duration-150 ease-in-out`;
 
                 const labelName = CLASS_MAP[item.label] || 'Unknown';
                 const labelColor = LABEL_COLORS[item.label] || 'bg-gray-100';
 
+                // --- Use 'content' field ---
                 const truncatedText = (item.content.length > 200) ? item.content.substring(0, 200) + '...' : item.content;
 
                 // Create Action Button
@@ -257,7 +317,12 @@
 
                 actionButton.onclick = () => handleLabelFix(item.id);
 
+                const isChecked = selectedItems.has(item.id);
+
                 row.innerHTML = `
+                    <td class="p-3">
+                        <input type="checkbox" class="row-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500" data-id="${item.id}" ${isChecked ? 'checked' : ''}>
+                    </td>
                     <td class="p-3 font-medium text-gray-500">${item.id}</td>
                     <td class="p-3 font-semibold">${item.cluster}</td>
                     <td class="p-3 text-gray-600">${item.probability.toFixed(4)}</td>
@@ -285,6 +350,7 @@
             `;
         }
 
+        // --- Single Item Fix ---
         function handleLabelFix(id) {
             const item = globalData.find(d => d.id === id);
             if (!item) return;
@@ -297,8 +363,85 @@
                 item.status = 'uncorrected';
             }
 
-            // Re-render the table to reflect the change
+            renderTable(); // Re-render the whole table to reflect change
+            updateBulkActionBar(); // Update selection status
+        }
+
+        // --- Bulk Action Logic ---
+        function handleRowCheckbox(event) {
+            if (!event.target.classList.contains('row-checkbox')) return;
+
+            const checkbox = event.target;
+            const id = parseInt(checkbox.dataset.id, 10);
+
+            if (checkbox.checked) {
+                selectedItems.add(id);
+            } else {
+                selectedItems.delete(id);
+            }
+            updateBulkActionBar();
+
+            // Update select-all checkbox state
+            selectAllCheckbox.checked = currentFilteredData.length > 0 && currentFilteredData.every(item => selectedItems.has(item.id));
+            selectAllCheckbox.indeterminate = currentFilteredData.length > 0 &&
+                                              currentFilteredData.some(item => selectedItems.has(item.id)) &&
+                                              !selectAllCheckbox.checked;
+        }
+
+        function handleSelectAll(event) {
+            const isChecked = event.target.checked;
+            // Only select/deselect the *currently visible* filtered items
+            for (const item of currentFilteredData) {
+                if (isChecked) {
+                    selectedItems.add(item.id);
+                } else {
+                    selectedItems.delete(item.id);
+                }
+            }
+            renderTable(); // Re-render to show all checkboxes as checked/unchecked
+            updateBulkActionBar();
+        }
+
+        function updateBulkActionBar() {
+            const count = selectedItems.size;
+            if (count > 0) {
+                bulkActionBar.classList.remove('hidden');
+                bulkSelectCount.textContent = `${count} item(s) selected`;
+            } else {
+                bulkActionBar.classList.add('hidden');
+            }
+        }
+
+        function handleBulkFix(newLabel) {
+            let itemsChanged = 0;
+            for (const id of selectedItems) {
+                const item = globalData.find(d => d.id === id);
+                if (item) {
+                    item.label = newLabel;
+                    item.status = 'corrected';
+                    itemsChanged++;
+                }
+            }
+            console.log(`Applied label ${newLabel} to ${itemsChanged} items.`);
+            selectedItems.clear();
             renderTable();
+            updateBulkActionBar();
+        }
+
+        function handleBulkRevert() {
+            let itemsChanged = 0;
+            for (const id of selectedItems) {
+                const item = globalData.find(d => d.id === id);
+                if (item) {
+                    item.label = item.original_label;
+                    item.status = 'uncorrected';
+                    itemsChanged++;
+                }
+            }
+            console.log(`Reverted ${itemsChanged} items.`);
+            selectedItems.clear();
+            renderTable();
+            updateBulkActionBar();
         }
 
         function handleExport() {
@@ -310,7 +453,7 @@
             a.href = url;
             a.download = 'data_corrected.json';
             document.body.appendChild(a);
-a.click();
+            a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
