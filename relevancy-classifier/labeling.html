@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Label Correction Suite v2</title>
+    <title>Label Correction Suite v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Simple transition for hover */
@@ -41,7 +41,7 @@
 
         <!-- Header -->
         <div class="mb-6 text-center">
-            <h1 class="text-3xl font-bold text-gray-800">Label Correction Suite</h1>
+            <h1 class="text-3xl font-bold text-gray-800">Label Correction Suite v2.1</h1>
             <p class="text-gray-600">Load, filter, search, and bulk-correct your LLM-generated labels.</p>
         </div>
 
@@ -75,8 +75,9 @@
                         <label for="label-filter" class="block text-sm font-medium text-gray-700 mb-2">3. Filter by Label</label>
                         <select id="label-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             <option value="all">All Labels</option>
-                            <option value="0">Relevant (0)</option>
-                            <option value="1">Irrelevant (1)</option>
+                            <!-- UPDATED: 1 is Relevant, 0 is Irrelevant -->
+                            <option value="1">Relevant (1)</option>
+                            <option value="0">Irrelevant (0)</option>
                         </select>
                     </div>
 
@@ -135,8 +136,9 @@
                                     <td colspan="7" class="p-3">
                                         <div class="flex items-center space-x-4">
                                             <span id="bulk-select-count" class="text-sm font-medium text-blue-800">0 items selected</span>
-                                            <button id="bulk-set-relevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Set as Relevant (0)</button>
-                                            <button id="bulk-set-irrelevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700">Set as Irrelevant (1)</button>
+                                            <!-- UPDATED: Buttons call corrected IDs -->
+                                            <button id="bulk-set-relevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Set as Relevant (1)</button>
+                                            <button id="bulk-set-irrelevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700">Set as Irrelevant (0)</button>
                                             <button id="bulk-revert" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-gray-800 bg-yellow-400 hover:bg-yellow-500">Revert Selected</button>
                                         </div>
                                     </td>
@@ -160,10 +162,14 @@
         let globalData = [];
         let currentFilteredData = [];
         let selectedItems = new Set();
-        const CLASS_MAP = { 0: "Relevant", 1: "Irrelevant" };
+
+        // --- UPDATED MAP: 1 = Relevant, 0 = Irrelevant ---
+        const CLASS_MAP = { 1: "Relevant", 0: "Irrelevant" };
+
+        // Updated Colors to match new IDs (1 gets blue, 0 gets purple)
         const LABEL_COLORS = {
-            0: "bg-blue-100 text-blue-800",
-            1: "bg-purple-100 text-purple-800"
+            1: "bg-blue-100 text-blue-800",
+            0: "bg-purple-100 text-purple-800"
         };
         const STATUS_COLORS = {
             uncorrected: "bg-white",
@@ -203,8 +209,10 @@
         // Bulk action listeners
         selectAllCheckbox.addEventListener('change', handleSelectAll);
         tableBody.addEventListener('change', handleRowCheckbox); // Event delegation
-        bulkSetRelevant.addEventListener('click', () => handleBulkFix(0));
-        bulkSetIrrelevant.addEventListener('click', () => handleBulkFix(1));
+
+        // UPDATED: Bulk Set Relevant passes 1, Irrelevant passes 0
+        bulkSetRelevant.addEventListener('click', () => handleBulkFix(1));
+        bulkSetIrrelevant.addEventListener('click', () => handleBulkFix(0));
         bulkRevert.addEventListener('click', handleBulkRevert);
 
         // --- Logic ---
@@ -223,7 +231,7 @@
 
                     // --- VALIDATION: Check for 'content' field ---
                     const firstItem = globalData[0];
-                    if (!('id' in firstItem && 'cluster' in firstItem && 'content' in firstItem && 'label' in firstItem && 'status' in firstItem)) {
+                    if (!('id' in firstItem && 'cluster' in firstItem && 'content' in firstItem && 'relevant' in firstItem && 'status' in firstItem)) {
                          throw new Error("JSON is missing required fields: id, cluster, content, label, status.");
                     }
 
@@ -264,7 +272,7 @@
             // 2. Apply filters
             currentFilteredData = globalData.filter(item => {
                 const clusterMatch = clusterVal === 'all' || item.cluster.toString() === clusterVal;
-                const labelMatch = labelVal === 'all' || item.label.toString() === labelVal;
+                const labelMatch = labelVal === 'all' || item.relevant.toString() === labelVal;
                 const statusMatch = statusVal === 'all' || item.status === statusVal;
                 // --- SEARCH LOGIC ---
                 const searchMatch = searchVal === '' || (item.content && item.content.toLowerCase().includes(searchVal));
@@ -296,18 +304,19 @@
                 const row = document.createElement('tr');
                 row.className = `${STATUS_COLORS[item.status]} transition-colors duration-150 ease-in-out`;
 
-                const labelName = CLASS_MAP[item.label] || 'Unknown';
-                const labelColor = LABEL_COLORS[item.label] || 'bg-gray-100';
+                const labelName = CLASS_MAP[item.relevant] || 'Unknown';
+                const labelColor = LABEL_COLORS[item.relevant] || 'bg-gray-100';
 
                 // --- Use 'content' field ---
-                const truncatedText = (item.content.length > 200) ? item.content.substring(0, 200) + '...' : item.content;
+                const truncatedText = (item.content.length > 1000) ? item.content.substring(0, 1000) + '...' : item.content;
 
                 // Create Action Button
                 const actionButton = document.createElement('button');
                 actionButton.className = `${ACTION_BUTTON_CLASSES}`;
 
                 if (item.status === 'uncorrected') {
-                    const targetLabel = item.label === 0 ? 1 : 0;
+                    // UPDATED: Flip logic based on new map
+                    const targetLabel = item.relevant === 1 ? 0 : 1;
                     actionButton.textContent = `Set to ${CLASS_MAP[targetLabel]} (${targetLabel})`;
                     actionButton.classList.add(...FIX_BUTTON_CLASSES.split(' '));
                 } else {
@@ -329,7 +338,7 @@
                     <td class="p-3 text-gray-800">${truncatedText}</td>
                     <td class="p-3">
                         <span class="px-2 py-1 text-xs font-semibold rounded-full ${labelColor}">
-                            ${labelName} (${item.label})
+                            ${labelName} (${item.relevant})
                         </span>
                     </td>
                     <td class="p-3"></td>
@@ -356,10 +365,11 @@
             if (!item) return;
 
             if (item.status === 'uncorrected') {
-                item.label = item.label === 0 ? 1 : 0; // Flip the label
+                // UPDATED: Flip logic. If currently 1, make 0. If 0, make 1.
+                itemrelevant = item.relevant === 1 ? 0 : 1;
                 item.status = 'corrected';
             } else {
-                item.label = item.original_label; // Revert to original
+                itemrelevant = item.original_label; // Revert to original
                 item.status = 'uncorrected';
             }
 
@@ -417,7 +427,7 @@
             for (const id of selectedItems) {
                 const item = globalData.find(d => d.id === id);
                 if (item) {
-                    item.label = newLabel;
+                    item.relevant = newLabel;
                     item.status = 'corrected';
                     itemsChanged++;
                 }
@@ -433,7 +443,7 @@
             for (const id of selectedItems) {
                 const item = globalData.find(d => d.id === id);
                 if (item) {
-                    item.label = item.original_label;
+                    item.relevant = item.original_label;
                     item.status = 'uncorrected';
                     itemsChanged++;
                 }

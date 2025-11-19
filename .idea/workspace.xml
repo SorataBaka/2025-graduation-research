@@ -5,14 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="77309551-1ef0-489a-97ca-b088f7b9f9ef" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/2025-graduation-research.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/2025-graduation-research.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/project.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/data_corrected.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/result.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/relevancy-classifier/1.1. labeling_fix.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/1.1. labeling_fix.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/relevancy-classifier/5. relevancy_classifier_training.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/5. relevancy_classifier_training.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/relevancy-classifier/labeling.html" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/labeling.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/reader.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,10 +20,10 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 6
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 6
+}</component>
   <component name="ProjectId" id="35gKxnzrgMyPKVRm67NjHgQD0Ym" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -38,6 +36,7 @@
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/Users/christianharjuno/Documents/Source Codes/2025-graduation-research/relevancy-classifier",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -47,6 +46,11 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/relevancy-classifier" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -62,7 +66,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1763526523552</updated>
-      <workItem from="1763526524760" duration="4142000" />
+      <workItem from="1763526524760" duration="5788000" />
+      <workItem from="1763534737990" duration="17448000" />
     </task>
     <servers />
   </component>
