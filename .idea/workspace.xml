@@ -5,17 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="77309551-1ef0-489a-97ca-b088f7b9f9ef" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/relevancy-classifier/data_corrected.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/relevancy-classifier/result.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/8. sentiment_llm_labeling.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/relevancy-classifier/1.1. labeling_fix.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/1.1. labeling_fix.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/relevancy-classifier/labeling.html" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/labeling.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/relevancy-classifier/reader.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -33,6 +37,11 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowPanel.toolwindow.highlight.mappings": "true",
+    "WebServerToolWindowPanel.toolwindow.highlight.symlinks": "true",
+    "WebServerToolWindowPanel.toolwindow.show.date": "false",
+    "WebServerToolWindowPanel.toolwindow.show.permissions": "false",
+    "WebServerToolWindowPanel.toolwindow.show.size": "false",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
@@ -68,6 +77,7 @@
       <updated>1763526523552</updated>
       <workItem from="1763526524760" duration="5788000" />
       <workItem from="1763534737990" duration="17448000" />
+      <workItem from="1763601381283" duration="1886000" />
     </task>
     <servers />
   </component>
