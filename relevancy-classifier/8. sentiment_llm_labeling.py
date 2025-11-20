@@ -135,11 +135,10 @@ def label_text(row):
     # ALWAYS return the row
     return row
 
-sentiment_train_ds = sentiment_train_ds.map(label_text, num_proc=30)
-dataset["train"] = sentiment_train_ds
-dataset.push_to_hub("tianharjuno/twitter-parse", commit_message="labeled sentiment train ds")
+# sentiment_train_ds = sentiment_train_ds.map(label_text, num_proc=30)
+# dataset["train_sentiment"] = sentiment_train_ds
+# dataset.push_to_hub("tianharjuno/twitter-parse", commit_message="labeled sentiment train ds")
 
-sentiment_test_ds = sentiment_test_ds.map(label_text, num_proc=30)
-dataset["test"] = sentiment_test_ds
-dataset["train"] = sentiment_train_ds
+sentiment_test_ds = sentiment_test_ds.map(label_text, num_proc=56)
+dataset["test_sentiment"] = sentiment_test_ds
 dataset.push_to_hub("tianharjuno/twitter-parse", commit_message="labeled sentiment test ds")
