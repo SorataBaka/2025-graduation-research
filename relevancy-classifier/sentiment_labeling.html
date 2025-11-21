@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluster Labeler v4 - Large File Support</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #1e1e2e;
+            --bg-panel: #252537;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #7c4dff;
+            --neg-color: #ff5252;
+            --neu-color: #fb8c00;
+            --pos-color: #4caf50;
+            --unlab-color: #606060;
+            --border: #333;
+            --complete-bg: #1f2b23;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 300px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+        }
+
+        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; display: flex; justify-content: space-between; }
+        .file-input-container { padding: 10px; border-bottom: 1px solid var(--border); }
+        #cluster-list { flex: 1; overflow-y: auto; }
+
+        .cluster-item {
+            padding: 12px; border-bottom: 1px solid #333; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.2s;
+        }
+        .cluster-item:hover { background-color: #333; }
+
+        /* States */
+        .cluster-item.active { background-color: #3d3d5c; border-left: 4px solid var(--accent); }
+        .cluster-item.complete {
+            background-color: var(--complete-bg);
+            border-left: 4px solid var(--pos-color);
+        }
+        .cluster-item.active.complete {
+            background-color: #2d3d33;
+            border-left: 4px solid #69f0ae;
+        }
+
+        .cluster-info { flex: 1; }
+        .cluster-meta { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;}
+        .cluster-badge { font-size: 0.75em; padding: 2px 6px; border-radius: 4px; color: #000; font-weight: bold; width: fit-content;}
+        .unlab-count { font-size: 0.75em; color: var(--text-muted); }
+        .check-icon { color: var(--pos-color); font-weight: bold; margin-right: 5px; display: none; }
+        .complete .check-icon { display: inline; }
+
+        /* --- Main Content --- */
+        .main { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; }
+
+        /* --- Dashboard --- */
+        .dashboard {
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 15px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            height: 140px;
+            flex-shrink: 0;
+        }
+
+        .chart-container { width: 140px; height: 140px; position: relative; }
+        .stats-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .stat-row { display: flex; gap: 15px; margin-top: 10px; }
+        .stat-box {
+            background: #1e1e2e; padding: 8px 12px; border-radius: 6px;
+            border: 1px solid var(--border); font-size: 0.9em; min-width: 80px;
+        }
+        .stat-val { font-size: 1.2em; font-weight: bold; display: block; }
+        .stat-label { font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; }
+
+        /* --- Filter Bar --- */
+        .filter-bar {
+            padding: 10px 20px; background-color: #1a1a26; border-bottom: 1px solid var(--border);
+            display: flex; gap: 15px; align-items: center; flex-shrink: 0;
+        }
+        .search-box {
+            background: #2a2a3d; border: 1px solid var(--border); color: white;
+            padding: 8px; border-radius: 4px; width: 250px; outline: none;
+        }
+        .search-box:focus { border-color: var(--accent); }
+        .filter-group { display: flex; background: #2a2a3d; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+        .filter-btn {
+            background: none; border: none; color: var(--text-muted); padding: 6px 12px; cursor: pointer;
+            border-right: 1px solid var(--border); font-size: 0.9em;
+        }
+        .filter-btn:last-child { border-right: none; }
+        .filter-btn:hover { background: #333; color: white; }
+        .filter-btn.active { background: var(--accent); color: white; }
+
+        /* --- Sample List --- */
+        #sample-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+
+        .card { background-color: #2a2a3d; border: 1px solid var(--border); border-radius: 6px; padding: 15px; }
+        .card.unlabeled-source { border-left: 4px solid var(--text-muted); }
+        .card.labeled-source { border-left: 4px solid var(--accent); }
+
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85em; color: var(--text-muted); }
+        .card-content { font-size: 1.1em; line-height: 1.5; margin-bottom: 15px; }
+        .card-actions { display: flex; gap: 10px; align-items: center; }
+
+        /* Radios */
+        .label-radio { display: none; }
+        .label-btn {
+            padding: 6px 12px; border: 1px solid var(--border); border-radius: 15px;
+            cursor: pointer; font-size: 0.85em; color: var(--text-muted); user-select: none; transition: 0.2s;
+        }
+        .label-radio:checked + .label-btn { color: white; border-color: transparent; transform: scale(1.05); }
+        .label-radio[value="0"]:checked + .label-btn { background-color: var(--neg-color); }
+        .label-radio[value="1"]:checked + .label-btn { background-color: var(--neu-color); }
+        .label-radio[value="2"]:checked + .label-btn { background-color: var(--pos-color); }
+        .label-radio[value="-1"]:checked + .label-btn { background-color: #555; }
+
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-success { background-color: var(--pos-color); }
+        .btn-save { background-color: #00bcd4; width: 100%; margin-top: 10px; }
+        .prob-meter { font-size: 0.75em; background: #111; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-header">
+        <span>Labeler v4 (Large)</span>
+        <span id="total-progress" style="font-size: 0.8em; color: var(--pos-color)">0%</span>
+    </div>
+    <div class="file-input-container">
+        <input type="file" id="fileInput" accept=".json" style="color: white; max-width: 100%;">
+    </div>
+    <div id="cluster-list">
+        <div style="padding: 20px; text-align: center; color: gray;">Load JSON to begin</div>
+    </div>
+    <div style="padding: 10px; border-top: 1px solid #333;">
+        <button id="downloadBtn" class="btn btn-save">Save & Download JSON</button>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+    <div class="dashboard">
+        <div class="chart-container"><canvas id="distChart"></canvas></div>
+        <div class="stats-panel">
+            <div style="display: flex; justify-content: space-between;">
+                <h2 id="current-cluster-title" style="margin: 0;">No Cluster Selected</h2>
+                <button id="propagateBtn" class="btn btn-success" style="display: none; font-size: 0.8em;">
+                    Apply Majority to Unlabeled
+                </button>
+            </div>
+            <div class="stat-row">
+                <div class="stat-box" style="border-color: var(--neg-color)">
+                    <span class="stat-val" id="count-neg" style="color: var(--neg-color)">0</span>
+                    <span class="stat-label">Negative (0)</span>
+                </div>
+                <div class="stat-box" style="border-color: var(--neu-color)">
+                    <span class="stat-val" id="count-neu" style="color: var(--neu-color)">0</span>
+                    <span class="stat-label">Neutral (1)</span>
+                </div>
+                <div class="stat-box" style="border-color: var(--pos-color)">
+                    <span class="stat-val" id="count-pos" style="color: var(--pos-color)">0</span>
+                    <span class="stat-label">Positive (2)</span>
+                </div>
+                <div class="stat-box" style="border-color: var(--unlab-color)">
+                    <span class="stat-val" id="count-unlab" style="color: var(--text-muted)">0</span>
+                    <span class="stat-label">Unlabeled (-1)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <input type="text" id="searchInput" class="search-box" placeholder="Search content (fuzzy)...">
+        <div class="filter-group">
+            <button class="filter-btn active" onclick="setFilter('all')">All</button>
+            <button class="filter-btn" onclick="setFilter('-1')">Unlabeled</button>
+            <button class="filter-btn" onclick="setFilter('2')" style="color: var(--pos-color)">Pos</button>
+            <button class="filter-btn" onclick="setFilter('0')" style="color: var(--neg-color)">Neg</button>
+            <button class="filter-btn" onclick="setFilter('1')" style="color: var(--neu-color)">Neu</button>
+        </div>
+    </div>
+    <div id="sample-container"></div>
+</div>
+
+<script>
+    let projectData = null;
+    let currentClusterIndex = -1;
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let myChart = null;
+
+    // --- Init Chart ---
+    function initChart() {
+        const ctx = document.getElementById('distChart').getContext('2d');
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Neg', 'Neu', 'Pos', 'Unlab'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#ff5252', '#fb8c00', '#4caf50', '#606060'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '70%',
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+    initChart();
+
+    // --- Helper Utils ---
+    const getCounts = (samples) => {
+        let counts = {0:0, 1:0, 2:0, "-1":0};
+        samples.forEach(s => counts[s.current_label]++);
+        return counts;
+    };
+
+    const getMajorityLabel = (counts) => {
+        let majLabel = "0"; let maxVal = 0;
+        [0, 1, 2].forEach(l => { if(counts[l] > maxVal) { maxVal = counts[l]; majLabel = l; } });
+        return majLabel;
+    };
+
+    const getLabelName = (id) => {
+        if(id == 0 || id == "0") return "Neg";
+        if(id == 1 || id == "1") return "Neu";
+        if(id == 2 || id == "2") return "Pos";
+        if(id == -1 || id == "-1") return "Unlabeled";
+        return "All";
+    };
+
+    // --- Load Data ---
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                projectData = JSON.parse(event.target.result);
+                renderSidebar();
+                updateTotalProgress();
+                alert(`Loaded ${projectData.metadata.num_samples} samples.`);
+            } catch (err) { console.error(err); alert("Error parsing JSON"); }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- Sidebar & Progress ---
+    const clusterList = document.getElementById('cluster-list');
+
+    function renderSidebar() {
+        clusterList.innerHTML = '';
+        projectData.clusters.sort((a, b) => a.cluster_id - b.cluster_id);
+
+        projectData.clusters.forEach((cluster, index) => {
+            const div = document.createElement('div');
+            div.id = `cluster-row-${index}`;
+            div.className = 'cluster-item';
+            div.onclick = () => loadCluster(index);
+            div.innerHTML = generateSidebarHTML(cluster);
+            const counts = getCounts(cluster.samples);
+            if (counts['-1'] === 0) div.classList.add('complete');
+            clusterList.appendChild(div);
+        });
+    }
+
+    function generateSidebarHTML(cluster) {
+        const counts = getCounts(cluster.samples);
+        const majLabel = getMajorityLabel(counts);
+        const totalLabeled = counts[0] + counts[1] + counts[2];
+        const purity = totalLabeled > 0 ? Math.round((counts[majLabel] / totalLabeled) * 100) : 0;
+        const color = majLabel == 0 ? '#ff5252' : (majLabel == 2 ? '#4caf50' : '#fb8c00');
+        return `
+            <div class="cluster-info"><div><span class="check-icon">✔</span> <strong>Cluster ${cluster.cluster_id}</strong></div></div>
+            <div class="cluster-meta"><span class="cluster-badge" style="background:${color}">${purity}% ${getLabelName(majLabel)}</span><span class="unlab-count">${counts['-1']} left</span></div>
+        `;
+    }
+
+    function updateSidebarRow(index) {
+        const row = document.getElementById(`cluster-row-${index}`);
+        if (!row) return;
+        const cluster = projectData.clusters[index];
+        row.innerHTML = generateSidebarHTML(cluster);
+        const counts = getCounts(cluster.samples);
+        if (counts['-1'] === 0) row.classList.add('complete'); else row.classList.remove('complete');
+        updateTotalProgress();
+    }
+
+    function updateTotalProgress() {
+        if (!projectData) return;
+        let total = 0, completed = 0;
+        projectData.clusters.forEach(c => { total++; if(c.samples.every(s => s.current_label !== -1)) completed++; });
+        document.getElementById('total-progress').innerText = `${completed}/${total} Clusters Done`;
+    }
+
+    // --- Main Logic ---
+    const currentClusterTitle = document.getElementById('current-cluster-title');
+    const propagateBtn = document.getElementById('propagateBtn');
+
+    function loadCluster(index) {
+        currentClusterIndex = index;
+        document.querySelectorAll('.cluster-item').forEach(el => el.classList.remove('active'));
+        const row = document.getElementById(`cluster-row-${index}`);
+        if(row) row.classList.add('active');
+
+        currentClusterTitle.innerText = `Cluster ${projectData.clusters[index].cluster_id}`;
+        propagateBtn.style.display = 'block';
+        updateStats();
+        renderSamples();
+
+        propagateBtn.onclick = () => {
+            const cluster = projectData.clusters[index];
+            const counts = getCounts(cluster.samples);
+            const maj = getMajorityLabel(counts);
+            let changed = 0;
+            cluster.samples.forEach(s => { if(s.current_label === -1) { s.current_label = parseInt(maj); changed++; } });
+            updateStats();
+            renderSamples();
+            alert(`Propagated Class ${getLabelName(maj)} to ${changed} unlabeled samples.`);
+        };
+    }
+
+    function updateStats() {
+        if(currentClusterIndex === -1) return;
+        const samples = projectData.clusters[currentClusterIndex].samples;
+        const counts = getCounts(samples);
+        document.getElementById('count-neg').innerText = counts[0];
+        document.getElementById('count-neu').innerText = counts[1];
+        document.getElementById('count-pos').innerText = counts[2];
+        document.getElementById('count-unlab').innerText = counts['-1'];
+        myChart.data.datasets[0].data = [counts[0], counts[1], counts[2], counts['-1']];
+        myChart.update();
+        updateSidebarRow(currentClusterIndex);
+    }
+
+    // --- Filtering/Search ---
+    const sampleContainer = document.getElementById('sample-container');
+    const searchInput = document.getElementById('searchInput');
+
+    searchInput.addEventListener('input', (e) => { searchQuery = e.target.value.toLowerCase(); renderSamples(); });
+
+    window.setFilter = (filterType) => {
+        currentFilter = filterType;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if(btn.innerText.toLowerCase().includes(getLabelName(filterType).toLowerCase()) ||
+               (filterType === 'all' && btn.innerText === 'All') ||
+               (filterType === '-1' && btn.innerText === 'Unlabeled')) btn.classList.add('active');
+        });
+        renderSamples();
+    };
+
+    function renderSamples() {
+        if (currentClusterIndex === -1) return;
+        const samples = projectData.clusters[currentClusterIndex].samples;
+        sampleContainer.innerHTML = '';
+
+        const filtered = samples.filter(s => {
+            if (searchQuery && !s.content.toLowerCase().includes(searchQuery)) return false;
+            if (currentFilter !== 'all' && String(s.current_label) !== String(currentFilter)) return false;
+            return true;
+        });
+
+        filtered.sort((a, b) => {
+            if (a.current_label === -1 && b.current_label !== -1) return -1;
+            if (a.current_label !== -1 && b.current_label === -1) return 1;
+            return 0;
+        });
+
+        const limit = 100;
+        filtered.slice(0, limit).forEach(sample => {
+            const card = document.createElement('div');
+            card.className = `card ${sample.original_label === -1 ? 'unlabeled-source' : 'labeled-source'}`;
+            const uniqueName = `s_${sample.tweet_id}`;
+
+            card.innerHTML = `
+                <div class="card-header"><span>${sample.author}</span><span class="prob-meter">Prob: ${(sample.cluster_probability*100).toFixed(0)}%</span></div>
+                <div class="card-content">${highlightText(sample.content, searchQuery)}</div>
+                <div class="card-actions">
+                    ${renderRadio(uniqueName, 0, "Neg", sample.current_label)}
+                    ${renderRadio(uniqueName, 1, "Neu", sample.current_label)}
+                    ${renderRadio(uniqueName, 2, "Pos", sample.current_label)}
+                    ${renderRadio(uniqueName, -1, "Unlabeled", sample.current_label)}
+                </div>
+            `;
+            card.querySelectorAll('input').forEach(radio => {
+                radio.addEventListener('change', (e) => { sample.current_label = parseInt(e.target.value); updateStats(); });
+            });
+            sampleContainer.appendChild(card);
+        });
+
+        if(filtered.length > limit) {
+            const msg = document.createElement('div');
+            msg.style.textAlign = 'center'; msg.style.color = '#666';
+            msg.innerText = `Showing top ${limit} of ${filtered.length} matches...`;
+            sampleContainer.appendChild(msg);
+        }
+    }
+
+    function renderRadio(name, val, label, current) {
+        return `<label><input type="radio" name="${name}" value="${val}" class="label-radio" ${current == val ? 'checked' : ''}><span class="label-btn">${label}</span></label>`;
+    }
+
+    function highlightText(text, query) {
+        if(!query) return text;
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<span style="background:#7c4dff; color:white;">$1</span>');
+    }
+
+    // --- Large File Export Fix ---
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        if (!projectData) return;
+        projectData.metadata.generated_at = new Date().toISOString();
+
+        // Use Blob instead of Data URI
+        const jsonStr = JSON.stringify(projectData, null, 2);
+        const blob = new Blob([jsonStr], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "labeled_data_v4.json";
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 0);
+    });
+
+</script>
+</body>
+</html>

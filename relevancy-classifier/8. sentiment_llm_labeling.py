@@ -30,67 +30,60 @@ class TweetLabel(BaseModel):
     reasoning: str
 
 PROMPT = """<|im_start|>system
-You are an expert political analyst specializing in Indonesian civil-military relations and sociolinguistic analysis. Your task is to label the sentiment of social media texts regarding the "RUU TNI" (Revision of the TNI Law) and its impact on the diaspora.
+You are an expert Political Analyst and Computational Linguist specializing in Indonesian civil-military relations (Reformasi vs. Neo-Orba) and internet slang (bahasa gaul/sarkas).
 
-You must classify the text into exactly one of three categories based on the user's strict stance on the "stratification" of the military (expansion of military power into civilian life).
+Your task is to classify the sentiment of tweets regarding the **RUU TNI (Revision of the TNI Law) 2025**.
 
-### DEFINITIONS OF LABELS:
+### CORE CONTEXT (RUU TNI 2025)
+The revision is highly controversial. You must understand these specific articles to classify correctly:
+*   **Article 47 (Civilian Posts):** Allows active soldiers in 14+ civilian ministries. Critics call this "Dwifungsi" (Dual Function) or "Shadow Bureaucracy." Supporters call it "Competence."
+*   **Article 53 (Retirement Age):** Extends retirement age. Critics call this "Colonel Bottleneck" or "Gerontocracy."
+*   **Article 7 (Tasks):** Expands role to "Cyber Threats" and "Protection of Citizens Abroad." Critics fear "Surveillance," "Cyber Army," and "Kidnapping."
 
-**LABEL 0: NEGATIVE (Opposed)**
-- The user opposes the RUU TNI or the "stratification" (entrenchment) of military power.
-- Expresses fear of "Dwifungsi" (Dual Function), military in civilian offices (Article 47), or extended retirement age (Article 53).
-- Expresses fear of surveillance, "protection of citizens abroad" (Article 7), or intelligence overreach targeting the diaspora.
-- Uses sarcasm to mock the government, the DPR, or the military regarding this law.
-- Criticizes the *process* of ratification (e.g., "rushed," "undemocratic," "betrayal of Reformasi").
-- Keywords: Tolak, Bahaya, Orba, Junta, Represi, Mundur, Kecewa, Parcok, Mulyono (in negative context), Dwifungsi.
+### STRICT ENTITY DEFINITIONS (CRITICAL FOR ACCURACY)
+1.  **PARCOK ("Partai Coklat"):** Refers to the **POLICE (Polri)**.
+    *   **RULE:** Hating "Parcok" is **NOT** hating the RUU TNI.
+    *   If a tweet attacks Parcok but ignores the TNI bill, label as **LABEL 1 (NEUTRAL/IRRELEVANT)**.
+    *   If a tweet compares them (e.g., "Parcok is bad, now Loreng wants to be bad too"), it is **LABEL 0 (OPPOSE)**.
+2.  **LORENG / WERENG / APARAT:**
+    *   "Loreng" = TNI (Relevant).
+    *   "Wereng" = Usually Police (Irrelevant), but check context.
+    *   "Aparat" = Ambiguous. If discussing "Jabatan Sipil" (Civilian jobs), it refers to TNI.
+3.  **MULYONO:** Derogatory name for President Jokowi.
+    *   **RULE:** If used with RUU TNI, it implies the bill is a tool for dynastic power/authoritarianism. Label **LABEL 0 (OPPOSE)**.
 
-**LABEL 2: POSITIVE (Supporting)**
-- The user supports the RUU TNI.
-- Views the law as modernizing, professionalizing, or strengthening national defense.
-- Supports military officers filling civilian posts for "efficiency" or "competence."
-- Expresses trust in the TNI and the government.
-- Keywords: Setuju, Dukung, Profesional, Sinergi, Kuat, Maju, NKRI Harga Mati, TNI Prima.
+### LABELING CATEGORIES
+*   **LABEL 2: POSITIVE (Support)**
+    *   Explicit agreement.
+    *   Keywords: "Setuju," "Dukung," "Profesional," "Sinergi," "Kesejahteraan Prajurit," "Efisiensi," "NKRI Harga Mati."
+*   **LABEL 0: NEGATIVE (Oppose)**
+    *   Disagreement, Fear, or Sarcasm regarding the bill.
+    *   Keywords: "Tolak," "Bahaya," "Orba," "Junta," "Dwifungsi," "Mundur," "Indonesia Gelap," "Peringatan Darurat," "Mulyono," "Surveillance," "Mata-mata."
+*   **LABEL 1: NEUTRAL (Unsure/Factual/Irrelevant)**
+    *   News headlines (e.g., "DPR passes bill").
+    *   Ambivalent statements.
+    *   **Off-topic rants about the Police (Parcok) that do not mention the TNI Bill.**
 
-**LABEL 1: NEUTRAL (Unsure/Factual)**
-- The text is a news headline or factual report without emotive language.
-- The user is asking a question or seeking information without a clear stance.
-- The user expresses mixed feelings that cancel each other out perfectly.
-- **STRICT RULE:** If the sentiment is ambiguous, sarcastic but unclear, or if you are unsure, YOU MUST LABEL IT 1.
-
-### CONTEXT KNOWLEDGE (Do not output this, use it to reason):
-- **Article 47:** Allows active military in civilian ministries. Critics call it "return of Dwifungsi." Supporters call it "competence optimization."
-- **Article 53:** Extends retirement age. Critics call it "gerontocracy." Supporters call it "retaining expertise."
-- **Article 7:** Expands military tasks to 16 areas, including "protection of citizens abroad." Diaspora fears this allows surveillance/kidnapping.
-- **Timeline:** Ratified on March 20, 2025, amidst protests.
-
-### RESPONSE FORMAT:
+### RESPONSE FORMAT
 You must output a JSON object containing the "reasoning" (in Indonesian) and the "label" (integer).
-Example: {"reasoning": "User uses sarcasm ('Selamat datang Orba') to criticize the bill.", "label": 0}
 
-<|im_end|>
-<|im_start|>user
-Classify this text: "Bagus banget revisinya, biar sekalian aja tentara jadi gubernur semua. Hancur demokrasi."
-<|im_end|>
-<|im_start|>assistant
-{"reasoning": "User uses heavy sarcasm. 'Bagus banget' is negated by 'hancur demokrasi' and the suggestion that soldiers become governors is a critique of Dwifungsi (stratification).", "label": 0}
-<|im_end|>
-<|im_start|>user
-Classify this text: "Rapat paripurna DPR hari ini resmi mengesahkan RUU TNI menjadi Undang-Undang."
-<|im_end|>
-<|im_start|>assistant
-{"reasoning": "This is a factual statement describing a news event (ratification) without expressing support or opposition.", "label": 1}
-<|im_end|>
-<|im_start|>user
-Classify this text: "TNI adalah garda terdepan bangsa. Revisi ini penting untuk menjamin kesejahteraan prajurit dan modernisasi alutsista. Maju terus!"
-<|im_end|>
-<|im_start|>assistant
-{"reasoning": "User explicitly supports the revision using positive keywords like 'penting', 'kesejahteraan', and 'maju terus'. Supports the institution.", "label": 2}
-<|im_end|>
-<|im_start|>user
-Classify this text: "Mulai deh pasal karet 'perlindungan WNI' dipakai buat mata-matain kita yang lagi kuliah di luar negeri. Ngeri banget."
-<|im_end|>
-<|im_start|>assistant
-{"reasoning": "User expresses specific fear regarding Article 7 ('perlindungan WNI') and explicitly mentions surveillance ('mata-matain') and fear ('ngeri'). This aligns with diaspora opposition to stratification.", "label": 0}
+### EXAMPLES (FEW-SHOT)
+
+Input: "Parcok anjing, kerjaannya nilang doang! Bubarin aja polisi."
+Output: {"reasoning": "User is attacking the Police (Parcok) regarding traffic tickets. This is unrelated to the RUU TNI.", "label": 1}
+
+Input: "Mantap, akhirnya tentara bisa masuk kementerian. Biar disiplin tuh PNS pemalas."
+Output: {"reasoning": "User supports Article 47 (Military in Ministries), believing it will improve discipline among civil servants.", "label": 2}
+
+Input: "Gila ya Mulyono, dwifungsi dihidupkan lagi. Selamat datang Orba jilid 2."
+Output: {"reasoning": "User uses 'Mulyono' (negative indicator) and explicitly frames the bill as the return of 'Dwifungsi' and 'New Order' (Orba).", "label": 0}
+
+Input: "Bagus banget revisinya, biar sekalian aja tentara jadi gubernur semua. Hancur demokrasi."
+Output: {"reasoning": "User uses heavy sarcasm. 'Bagus banget' is negated by 'hancur demokrasi'. The suggestion of soldiers becoming governors is a critique of stratification.", "label": 0}
+
+Input: "Tolak RUU TNI! Jangan sampai pasal 7 dipakai buat mata-matain mahasiswa di luar negeri."
+Output: {"reasoning": "User opposes Article 7 specifically regarding the 'protection of citizens abroad' clause, interpreting it as surveillance.", "label": 0}
+
 <|im_end|>
 <|im_start|>user
 Classify this text: "{input_text}"
@@ -105,7 +98,7 @@ def label_text(row):
     row["sentiment"] = 0
     try:
         response = ollama.chat(
-            model="qwen2:7b",
+            model="qwen2.5:7b",
             messages=[
                 {"role": "system", "content": PROMPT},
                 {"role": "user", "content": f"Classify this text: \"{text}\""}
@@ -135,9 +128,9 @@ def label_text(row):
     # ALWAYS return the row
     return row
 
-# sentiment_train_ds = sentiment_train_ds.map(label_text, num_proc=30)
-# dataset["train_sentiment"] = sentiment_train_ds
-# dataset.push_to_hub("tianharjuno/twitter-parse", commit_message="labeled sentiment train ds")
+sentiment_train_ds = sentiment_train_ds.map(label_text, num_proc=30)
+dataset["train_sentiment"] = sentiment_train_ds
+dataset.push_to_hub("tianharjuno/twitter-parse", commit_message="labeled sentiment train ds")
 
 sentiment_test_ds = sentiment_test_ds.map(label_text, num_proc=56)
 dataset["test_sentiment"] = sentiment_test_ds

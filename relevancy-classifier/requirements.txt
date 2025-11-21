@@ -1,3 +1,12 @@
-torch
-scikit-learn
-tranformers
+sentence-transformers==4.1.0
+transformers==4.51.3
+datasets==3.5.1
+scikit-learn==1.6.1
+umap-learn==0.5.7
+hdbscan==0.8.40
+accelerate==1.7.0
+tqdm==4.67.1
+hf_transfer==0.1.9
+matplotlib==3.9.4
+scikit-optimizer==0.9.1
+scikit-dimension==0.3.4
