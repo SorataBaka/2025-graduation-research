@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cluster Labeler v4 - Large File Support</title>
+    <title>Sentiment Correction - Card View</title>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -12,13 +12,16 @@
             --bg-panel: #252537;
             --text-main: #e0e0e0;
             --text-muted: #a0a0a0;
-            --accent: #7c4dff;
-            --neg-color: #ff5252;
-            --neu-color: #fb8c00;
-            --pos-color: #4caf50;
-            --unlab-color: #606060;
+
+            /* Sentiment Colors */
+            --neg-color: #ef4444; /* 0: Negative (Red) */
+            --neu-color: #f59e0b; /* 1: Neutral (Amber) */
+            --pos-color: #10b981; /* 2: Positive (Green) */
+
+            --unc-color: #606060; /* Uncorrected */
             --border: #333;
-            --complete-bg: #1f2b23;
+            --complete-bg: #1e283d;
+            --accent: #3b82f6;
         }
 
         body {
@@ -33,7 +36,7 @@
 
         /* --- Sidebar --- */
         .sidebar {
-            width: 300px;
+            width: 320px;
             background-color: var(--bg-panel);
             border-right: 1px solid var(--border);
             display: flex;
@@ -41,7 +44,7 @@
             z-index: 2;
         }
 
-        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; display: flex; justify-content: space-between; }
+        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .file-input-container { padding: 10px; border-bottom: 1px solid var(--border); }
         #cluster-list { flex: 1; overflow-y: auto; }
 
@@ -51,22 +54,13 @@
             transition: background 0.2s;
         }
         .cluster-item:hover { background-color: #333; }
-
-        /* States */
-        .cluster-item.active { background-color: #3d3d5c; border-left: 4px solid var(--accent); }
-        .cluster-item.complete {
-            background-color: var(--complete-bg);
-            border-left: 4px solid var(--pos-color);
-        }
-        .cluster-item.active.complete {
-            background-color: #2d3d33;
-            border-left: 4px solid #69f0ae;
-        }
+        .cluster-item.active { background-color: #2d3748; border-left: 4px solid var(--accent); }
+        .cluster-item.complete { background-color: var(--complete-bg); }
 
         .cluster-info { flex: 1; }
         .cluster-meta { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;}
-        .cluster-badge { font-size: 0.75em; padding: 2px 6px; border-radius: 4px; color: #000; font-weight: bold; width: fit-content;}
-        .unlab-count { font-size: 0.75em; color: var(--text-muted); }
+        .cluster-badge { font-size: 0.75em; padding: 2px 6px; border-radius: 4px; color: #fff; font-weight: bold; width: fit-content;}
+        .todo-count { font-size: 0.75em; color: var(--text-muted); }
         .check-icon { color: var(--pos-color); font-weight: bold; margin-right: 5px; display: none; }
         .complete .check-icon { display: inline; }
 
@@ -87,13 +81,14 @@
 
         .chart-container { width: 140px; height: 140px; position: relative; }
         .stats-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .stat-row { display: flex; gap: 15px; margin-top: 10px; }
+        .stat-row { display: flex; gap: 10px; margin-top: 10px; }
         .stat-box {
             background: #1e1e2e; padding: 8px 12px; border-radius: 6px;
-            border: 1px solid var(--border); font-size: 0.9em; min-width: 80px;
+            border: 1px solid var(--border); font-size: 0.9em; min-width: 80px; flex: 1;
+            text-align: center;
         }
         .stat-val { font-size: 1.2em; font-weight: bold; display: block; }
-        .stat-label { font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; }
+        .stat-label { font-size: 0.7em; color: var(--text-muted); text-transform: uppercase; }
 
         /* --- Filter Bar --- */
         .filter-bar {
@@ -117,30 +112,38 @@
         /* --- Sample List --- */
         #sample-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
 
-        .card { background-color: #2a2a3d; border: 1px solid var(--border); border-radius: 6px; padding: 15px; }
-        .card.unlabeled-source { border-left: 4px solid var(--text-muted); }
-        .card.labeled-source { border-left: 4px solid var(--accent); }
+        .card { background-color: #2a2a3d; border: 1px solid var(--border); border-radius: 6px; padding: 15px; border-left: 4px solid var(--text-muted); }
+        .card.neg { border-left-color: var(--neg-color); }
+        .card.neu { border-left-color: var(--neu-color); }
+        .card.pos { border-left-color: var(--pos-color); }
 
         .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85em; color: var(--text-muted); }
         .card-content { font-size: 1.1em; line-height: 1.5; margin-bottom: 15px; }
-        .card-actions { display: flex; gap: 10px; align-items: center; }
+        .card-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-        /* Radios */
+        /* Custom Radios/Buttons */
         .label-radio { display: none; }
         .label-btn {
-            padding: 6px 12px; border: 1px solid var(--border); border-radius: 15px;
+            padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px;
             cursor: pointer; font-size: 0.85em; color: var(--text-muted); user-select: none; transition: 0.2s;
+            display: flex; align-items: center; gap: 5px; flex: 1; justify-content: center;
         }
-        .label-radio:checked + .label-btn { color: white; border-color: transparent; transform: scale(1.05); }
-        .label-radio[value="0"]:checked + .label-btn { background-color: var(--neg-color); }
-        .label-radio[value="1"]:checked + .label-btn { background-color: var(--neu-color); }
-        .label-radio[value="2"]:checked + .label-btn { background-color: var(--pos-color); }
-        .label-radio[value="-1"]:checked + .label-btn { background-color: #555; }
+        .label-radio:checked + .label-btn { color: white; border-color: transparent; transform: scale(1.05); font-weight: bold; }
+
+        /* Colors for selection */
+        .label-radio[value="0"]:checked + .label-btn { background-color: var(--neg-color); } /* Negative */
+        .label-radio[value="1"]:checked + .label-btn { background-color: var(--neu-color); color: white; } /* Neutral */
+        .label-radio[value="2"]:checked + .label-btn { background-color: var(--pos-color); } /* Positive */
 
         .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-success { background-color: var(--pos-color); }
-        .btn-save { background-color: #00bcd4; width: 100%; margin-top: 10px; }
+        .btn-success { background-color: var(--accent); }
+        .btn-save { background-color: #10b981; width: 100%; margin-top: 10px; }
         .prob-meter { font-size: 0.75em; background: #111; padding: 2px 5px; border-radius: 3px; }
+
+        .status-pill {
+            font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: auto;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -148,14 +151,14 @@
 <!-- SIDEBAR -->
 <div class="sidebar">
     <div class="sidebar-header">
-        <span>Labeler v4 (Large)</span>
+        <span>Sentiment Labeler</span>
         <span id="total-progress" style="font-size: 0.8em; color: var(--pos-color)">0%</span>
     </div>
     <div class="file-input-container">
         <input type="file" id="fileInput" accept=".json" style="color: white; max-width: 100%;">
     </div>
     <div id="cluster-list">
-        <div style="padding: 20px; text-align: center; color: gray;">Load JSON to begin</div>
+        <div style="padding: 20px; text-align: center; color: gray;">Load JSON to begin<br><small>Expects: id, content, sentiment (0,1,2), cluster</small></div>
     </div>
     <div style="padding: 10px; border-top: 1px solid #333;">
         <button id="downloadBtn" class="btn btn-save">Save & Download JSON</button>
@@ -170,91 +173,73 @@
             <div style="display: flex; justify-content: space-between;">
                 <h2 id="current-cluster-title" style="margin: 0;">No Cluster Selected</h2>
                 <button id="propagateBtn" class="btn btn-success" style="display: none; font-size: 0.8em;">
-                    Apply Majority to Unlabeled
+                    Review All as Majority
                 </button>
             </div>
             <div class="stat-row">
                 <div class="stat-box" style="border-color: var(--neg-color)">
                     <span class="stat-val" id="count-neg" style="color: var(--neg-color)">0</span>
-                    <span class="stat-label">Negative (0)</span>
+                    <span class="stat-label">Neg (0)</span>
                 </div>
                 <div class="stat-box" style="border-color: var(--neu-color)">
                     <span class="stat-val" id="count-neu" style="color: var(--neu-color)">0</span>
-                    <span class="stat-label">Neutral (1)</span>
+                    <span class="stat-label">Neu (1)</span>
                 </div>
                 <div class="stat-box" style="border-color: var(--pos-color)">
                     <span class="stat-val" id="count-pos" style="color: var(--pos-color)">0</span>
-                    <span class="stat-label">Positive (2)</span>
+                    <span class="stat-label">Pos (2)</span>
                 </div>
-                <div class="stat-box" style="border-color: var(--unlab-color)">
-                    <span class="stat-val" id="count-unlab" style="color: var(--text-muted)">0</span>
-                    <span class="stat-label">Unlabeled (-1)</span>
+                <div class="stat-box" style="border-color: #666">
+                    <span class="stat-val" id="count-unc" style="color: #aaa">0</span>
+                    <span class="stat-label">Uncorrected</span>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="filter-bar">
-        <input type="text" id="searchInput" class="search-box" placeholder="Search content (fuzzy)...">
+        <input type="text" id="searchInput" class="search-box" placeholder="Search content...">
         <div class="filter-group">
             <button class="filter-btn active" onclick="setFilter('all')">All</button>
-            <button class="filter-btn" onclick="setFilter('-1')">Unlabeled</button>
-            <button class="filter-btn" onclick="setFilter('2')" style="color: var(--pos-color)">Pos</button>
+            <button class="filter-btn" onclick="setFilter('uncorrected')">Uncorrected</button>
             <button class="filter-btn" onclick="setFilter('0')" style="color: var(--neg-color)">Neg</button>
             <button class="filter-btn" onclick="setFilter('1')" style="color: var(--neu-color)">Neu</button>
+            <button class="filter-btn" onclick="setFilter('2')" style="color: var(--pos-color)">Pos</button>
         </div>
     </div>
     <div id="sample-container"></div>
 </div>
 
 <script>
-    let projectData = null;
-    let currentClusterIndex = -1;
+    // --- Global Data ---
+    let globalData = [];
+    let clusterGroups = {};
+    let currentClusterId = null;
+
     let currentFilter = 'all';
     let searchQuery = '';
     let myChart = null;
 
-    // --- Init Chart ---
+    // --- Init Chart (0: Neg, 1: Neu, 2: Pos) ---
     function initChart() {
         const ctx = document.getElementById('distChart').getContext('2d');
         myChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Neg', 'Neu', 'Pos', 'Unlab'],
+                labels: ['Negative', 'Neutral', 'Positive'],
                 datasets: [{
-                    data: [0, 0, 0, 0],
-                    backgroundColor: ['#ff5252', '#fb8c00', '#4caf50', '#606060'],
+                    data: [0, 0, 0],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
                     borderWidth: 0
                 }]
             },
             options: {
-                responsive: true, maintainAspectRatio: false, cutout: '70%',
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
                 plugins: { legend: { display: false } }
             }
         });
     }
     initChart();
-
-    // --- Helper Utils ---
-    const getCounts = (samples) => {
-        let counts = {0:0, 1:0, 2:0, "-1":0};
-        samples.forEach(s => counts[s.current_label]++);
-        return counts;
-    };
-
-    const getMajorityLabel = (counts) => {
-        let majLabel = "0"; let maxVal = 0;
-        [0, 1, 2].forEach(l => { if(counts[l] > maxVal) { maxVal = counts[l]; majLabel = l; } });
-        return majLabel;
-    };
-
-    const getLabelName = (id) => {
-        if(id == 0 || id == "0") return "Neg";
-        if(id == 1 || id == "1") return "Neu";
-        if(id == 2 || id == "2") return "Pos";
-        if(id == -1 || id == "-1") return "Unlabeled";
-        return "All";
-    };
 
     // --- Load Data ---
     document.getElementById('fileInput').addEventListener('change', (e) => {
@@ -263,104 +248,188 @@
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                projectData = JSON.parse(event.target.result);
+                const rawData = JSON.parse(event.target.result);
+                if (!Array.isArray(rawData)) throw new Error("Expected JSON array");
+                globalData = rawData;
+
+                // Normalize data if status is missing
+                globalData.forEach(item => {
+                    if (!item.status) item.status = 'uncorrected';
+                    if (item.sentiment === undefined) item.sentiment = 1; // Default to neutral if missing
+                });
+
+                processDataIntoClusters();
                 renderSidebar();
                 updateTotalProgress();
-                alert(`Loaded ${projectData.metadata.num_samples} samples.`);
-            } catch (err) { console.error(err); alert("Error parsing JSON"); }
+                alert(`Loaded ${globalData.length} samples.`);
+            } catch (err) { console.error(err); alert("Error parsing JSON: " + err.message); }
         };
         reader.readAsText(file);
     });
 
-    // --- Sidebar & Progress ---
+    // --- Grouping Logic ---
+    function processDataIntoClusters() {
+        clusterGroups = {};
+        globalData.forEach(item => {
+            const cid = item.cluster !== undefined ? item.cluster : "Unclustered";
+            if (!clusterGroups[cid]) clusterGroups[cid] = [];
+            clusterGroups[cid].push(item);
+        });
+    }
+
+    // --- Sidebar ---
     const clusterList = document.getElementById('cluster-list');
 
     function renderSidebar() {
         clusterList.innerHTML = '';
-        projectData.clusters.sort((a, b) => a.cluster_id - b.cluster_id);
+        // Sort keys numerically if possible, else alphabetically
+        const clusterIds = Object.keys(clusterGroups).sort((a, b) => {
+            const na = parseInt(a), nb = parseInt(b);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+        });
 
-        projectData.clusters.forEach((cluster, index) => {
+        clusterIds.forEach(cid => {
+            const items = clusterGroups[cid];
             const div = document.createElement('div');
-            div.id = `cluster-row-${index}`;
+            div.id = `cluster-row-${cid}`;
             div.className = 'cluster-item';
-            div.onclick = () => loadCluster(index);
-            div.innerHTML = generateSidebarHTML(cluster);
-            const counts = getCounts(cluster.samples);
-            if (counts['-1'] === 0) div.classList.add('complete');
+            div.onclick = () => loadCluster(cid);
+
+            div.innerHTML = generateSidebarHTML(cid, items);
+            if (isClusterComplete(items)) div.classList.add('complete');
+
             clusterList.appendChild(div);
         });
     }
 
-    function generateSidebarHTML(cluster) {
-        const counts = getCounts(cluster.samples);
-        const majLabel = getMajorityLabel(counts);
-        const totalLabeled = counts[0] + counts[1] + counts[2];
-        const purity = totalLabeled > 0 ? Math.round((counts[majLabel] / totalLabeled) * 100) : 0;
-        const color = majLabel == 0 ? '#ff5252' : (majLabel == 2 ? '#4caf50' : '#fb8c00');
+    function generateSidebarHTML(cid, items) {
+        const counts = getCounts(items);
+
+        // Find Majority
+        let majLabel = 1;
+        let maxCount = -1;
+        [0, 1, 2].forEach(label => {
+            if (counts[label] > maxCount) {
+                maxCount = counts[label];
+                majLabel = label;
+            }
+        });
+
+        const purity = items.length > 0 ? Math.round((counts[majLabel] / items.length) * 100) : 0;
+
+        let color, labelText;
+        if (majLabel === 0) { color = 'var(--neg-color)'; labelText = 'Neg'; }
+        else if (majLabel === 1) { color = 'var(--neu-color)'; labelText = 'Neu'; }
+        else { color = 'var(--pos-color)'; labelText = 'Pos'; }
+
+        const uncorrected = counts['uncorrected'];
+        const displayId = cid === "-1" ? "Noise (-1)" : `Cluster ${cid}`;
+
         return `
-            <div class="cluster-info"><div><span class="check-icon">✔</span> <strong>Cluster ${cluster.cluster_id}</strong></div></div>
-            <div class="cluster-meta"><span class="cluster-badge" style="background:${color}">${purity}% ${getLabelName(majLabel)}</span><span class="unlab-count">${counts['-1']} left</span></div>
+            <div class="cluster-info"><div><span class="check-icon">✔</span> <strong>${displayId}</strong></div></div>
+            <div class="cluster-meta">
+                <span class="cluster-badge" style="background:${color}">${purity}% ${labelText}</span>
+                <span class="todo-count">${uncorrected} left</span>
+            </div>
         `;
     }
 
-    function updateSidebarRow(index) {
-        const row = document.getElementById(`cluster-row-${index}`);
+    function updateSidebarRow(cid) {
+        const row = document.getElementById(`cluster-row-${cid}`);
         if (!row) return;
-        const cluster = projectData.clusters[index];
-        row.innerHTML = generateSidebarHTML(cluster);
-        const counts = getCounts(cluster.samples);
-        if (counts['-1'] === 0) row.classList.add('complete'); else row.classList.remove('complete');
+        const items = clusterGroups[cid];
+        row.innerHTML = generateSidebarHTML(cid, items);
+        if (isClusterComplete(items)) row.classList.add('complete'); else row.classList.remove('complete');
         updateTotalProgress();
     }
 
-    function updateTotalProgress() {
-        if (!projectData) return;
-        let total = 0, completed = 0;
-        projectData.clusters.forEach(c => { total++; if(c.samples.every(s => s.current_label !== -1)) completed++; });
-        document.getElementById('total-progress').innerText = `${completed}/${total} Clusters Done`;
+    function isClusterComplete(items) {
+        return items.every(i => i.status === 'corrected');
     }
 
-    // --- Main Logic ---
+    function updateTotalProgress() {
+        const clusterIds = Object.keys(clusterGroups);
+        let completed = 0;
+        clusterIds.forEach(cid => { if(isClusterComplete(clusterGroups[cid])) completed++; });
+        document.getElementById('total-progress').innerText = `${completed}/${clusterIds.length} Done`;
+    }
+
+    // --- Stats Utils ---
+    function getCounts(items) {
+        let c = { 0: 0, 1: 0, 2: 0, 'uncorrected': 0 };
+        items.forEach(i => {
+            if ([0,1,2].includes(i.sentiment)) {
+                c[i.sentiment]++;
+            } else {
+                // Fallback for unexpected values
+                if(!c[i.sentiment]) c[i.sentiment] = 0;
+                c[i.sentiment]++;
+            }
+            if (i.status === 'uncorrected') c['uncorrected']++;
+        });
+        return c;
+    }
+
+    // --- Main View ---
     const currentClusterTitle = document.getElementById('current-cluster-title');
     const propagateBtn = document.getElementById('propagateBtn');
 
-    function loadCluster(index) {
-        currentClusterIndex = index;
+    function loadCluster(cid) {
+        currentClusterId = cid;
         document.querySelectorAll('.cluster-item').forEach(el => el.classList.remove('active'));
-        const row = document.getElementById(`cluster-row-${index}`);
+        const row = document.getElementById(`cluster-row-${cid}`);
         if(row) row.classList.add('active');
 
-        currentClusterTitle.innerText = `Cluster ${projectData.clusters[index].cluster_id}`;
+        const items = clusterGroups[cid];
+        const displayId = cid === "-1" ? "Noise (-1)" : `Cluster ${cid}`;
+        currentClusterTitle.innerText = displayId;
+
         propagateBtn.style.display = 'block';
         updateStats();
         renderSamples();
 
         propagateBtn.onclick = () => {
-            const cluster = projectData.clusters[index];
-            const counts = getCounts(cluster.samples);
-            const maj = getMajorityLabel(counts);
+            const counts = getCounts(items);
+            // Majority Vote logic
+            let maj = 1;
+            let maxC = -1;
+            [0, 1, 2].forEach(lbl => {
+                if(counts[lbl] > maxC) { maxC = counts[lbl]; maj = lbl; }
+            });
+
             let changed = 0;
-            cluster.samples.forEach(s => { if(s.current_label === -1) { s.current_label = parseInt(maj); changed++; } });
+            items.forEach(item => {
+                if (item.status === 'uncorrected') {
+                    item.sentiment = maj;
+                    item.status = 'corrected';
+                    changed++;
+                }
+            });
+
+            const labels = {0: "Negative", 1: "Neutral", 2: "Positive"};
             updateStats();
             renderSamples();
-            alert(`Propagated Class ${getLabelName(maj)} to ${changed} unlabeled samples.`);
+            alert(`Marked ${changed} items as ${labels[maj]} (Majority).`);
         };
     }
 
     function updateStats() {
-        if(currentClusterIndex === -1) return;
-        const samples = projectData.clusters[currentClusterIndex].samples;
-        const counts = getCounts(samples);
+        if (currentClusterId === null) return;
+        const items = clusterGroups[currentClusterId];
+        const counts = getCounts(items);
+
         document.getElementById('count-neg').innerText = counts[0];
         document.getElementById('count-neu').innerText = counts[1];
         document.getElementById('count-pos').innerText = counts[2];
-        document.getElementById('count-unlab').innerText = counts['-1'];
-        myChart.data.datasets[0].data = [counts[0], counts[1], counts[2], counts['-1']];
+        document.getElementById('count-unc').innerText = counts['uncorrected'];
+
+        myChart.data.datasets[0].data = [counts[0], counts[1], counts[2]];
         myChart.update();
-        updateSidebarRow(currentClusterIndex);
+        updateSidebarRow(currentClusterId);
     }
 
-    // --- Filtering/Search ---
+    // --- Filtering & Rendering ---
     const sampleContainer = document.getElementById('sample-container');
     const searchInput = document.getElementById('searchInput');
 
@@ -370,49 +439,88 @@
         currentFilter = filterType;
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
-            if(btn.innerText.toLowerCase().includes(getLabelName(filterType).toLowerCase()) ||
-               (filterType === 'all' && btn.innerText === 'All') ||
-               (filterType === '-1' && btn.innerText === 'Unlabeled')) btn.classList.add('active');
+            // Matching logic for UI active state
+            const t = btn.innerText.toLowerCase();
+            if(t === 'all' && filterType === 'all') btn.classList.add('active');
+            if(t === 'uncorrected' && filterType === 'uncorrected') btn.classList.add('active');
+            if(filterType === '0' && btn.innerText.includes('Neg')) btn.classList.add('active');
+            if(filterType === '1' && btn.innerText.includes('Neu')) btn.classList.add('active');
+            if(filterType === '2' && btn.innerText.includes('Pos')) btn.classList.add('active');
         });
         renderSamples();
     };
 
     function renderSamples() {
-        if (currentClusterIndex === -1) return;
-        const samples = projectData.clusters[currentClusterIndex].samples;
+        if (currentClusterId === null) return;
+        const items = clusterGroups[currentClusterId];
         sampleContainer.innerHTML = '';
 
-        const filtered = samples.filter(s => {
-            if (searchQuery && !s.content.toLowerCase().includes(searchQuery)) return false;
-            if (currentFilter !== 'all' && String(s.current_label) !== String(currentFilter)) return false;
+        const filtered = items.filter(item => {
+            if (searchQuery && !item.content.toLowerCase().includes(searchQuery)) return false;
+
+            if (currentFilter === 'all') return true;
+            if (currentFilter === 'uncorrected') return item.status === 'uncorrected';
+            if (currentFilter === '0') return item.sentiment === 0;
+            if (currentFilter === '1') return item.sentiment === 1;
+            if (currentFilter === '2') return item.sentiment === 2;
             return true;
         });
 
+        // Sort: Uncorrected first
         filtered.sort((a, b) => {
-            if (a.current_label === -1 && b.current_label !== -1) return -1;
-            if (a.current_label !== -1 && b.current_label === -1) return 1;
+            if (a.status === 'uncorrected' && b.status === 'corrected') return -1;
+            if (a.status === 'corrected' && b.status === 'uncorrected') return 1;
             return 0;
         });
 
         const limit = 100;
-        filtered.slice(0, limit).forEach(sample => {
+        filtered.slice(0, limit).forEach(item => {
             const card = document.createElement('div');
-            card.className = `card ${sample.original_label === -1 ? 'unlabeled-source' : 'labeled-source'}`;
-            const uniqueName = `s_${sample.tweet_id}`;
+            // Determine class for border color
+            let sentimentClass = 'neu';
+            if(item.sentiment === 0) sentimentClass = 'neg';
+            if(item.sentiment === 2) sentimentClass = 'pos';
+
+            // Only show colored border if corrected or existing label
+            const borderClass = item.status === 'uncorrected' ? '' : sentimentClass;
+
+            card.className = `card ${borderClass}`;
+            const uniqueName = `item_${item.id}`;
+            const probPercent = item.probability ? (item.probability * 100).toFixed(1) + '%' : 'N/A';
 
             card.innerHTML = `
-                <div class="card-header"><span>${sample.author}</span><span class="prob-meter">Prob: ${(sample.cluster_probability*100).toFixed(0)}%</span></div>
-                <div class="card-content">${highlightText(sample.content, searchQuery)}</div>
+                <div class="card-header">
+                    <span>ID: ${item.id}</span>
+                    <span class="prob-meter">Prob: ${probPercent}</span>
+                </div>
+                <div class="card-content">${highlightText(item.content, searchQuery)}</div>
                 <div class="card-actions">
-                    ${renderRadio(uniqueName, 0, "Neg", sample.current_label)}
-                    ${renderRadio(uniqueName, 1, "Neu", sample.current_label)}
-                    ${renderRadio(uniqueName, 2, "Pos", sample.current_label)}
-                    ${renderRadio(uniqueName, -1, "Unlabeled", sample.current_label)}
+                    <label>
+                        <input type="radio" name="${uniqueName}" value="0" class="label-radio" ${item.sentiment === 0 ? 'checked' : ''}>
+                        <span class="label-btn">Negative (0)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="${uniqueName}" value="1" class="label-radio" ${item.sentiment === 1 ? 'checked' : ''}>
+                        <span class="label-btn">Neutral (1)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="${uniqueName}" value="2" class="label-radio" ${item.sentiment === 2 ? 'checked' : ''}>
+                        <span class="label-btn">Positive (2)</span>
+                    </label>
+                    ${item.status === 'corrected' ? `<span class="status-pill" style="background:#10b981; color:black;">Corrected</span>` : ''}
                 </div>
             `;
+
             card.querySelectorAll('input').forEach(radio => {
-                radio.addEventListener('change', (e) => { sample.current_label = parseInt(e.target.value); updateStats(); });
+                radio.addEventListener('change', (e) => {
+                    const newVal = parseInt(e.target.value);
+                    item.sentiment = newVal;
+                    item.status = 'corrected';
+                    updateStats();
+                    renderSamples(); // Re-render to update border color immediately
+                });
             });
+
             sampleContainer.appendChild(card);
         });
 
@@ -424,33 +532,26 @@
         }
     }
 
-    function renderRadio(name, val, label, current) {
-        return `<label><input type="radio" name="${name}" value="${val}" class="label-radio" ${current == val ? 'checked' : ''}><span class="label-btn">${label}</span></label>`;
-    }
-
     function highlightText(text, query) {
         if(!query) return text;
         const regex = new RegExp(`(${query})`, 'gi');
-        return text.replace(regex, '<span style="background:#7c4dff; color:white;">$1</span>');
+        return text.replace(regex, '<span style="background:var(--accent); color:white;">$1</span>');
     }
 
-    // --- Large File Export Fix ---
+    // --- Export ---
     document.getElementById('downloadBtn').addEventListener('click', () => {
-        if (!projectData) return;
-        projectData.metadata.generated_at = new Date().toISOString();
+        if (!globalData || globalData.length === 0) return;
 
-        // Use Blob instead of Data URI
-        const jsonStr = JSON.stringify(projectData, null, 2);
+        const jsonStr = JSON.stringify(globalData, null, 2);
         const blob = new Blob([jsonStr], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = "labeled_data_v4.json";
+        a.download = "sentiment_corrected.json";
         document.body.appendChild(a);
         a.click();
 
-        // Cleanup
         setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);

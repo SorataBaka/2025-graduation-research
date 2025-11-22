@@ -34,55 +34,73 @@ You are an expert Political Analyst and Computational Linguist specializing in I
 
 Your task is to classify the sentiment of tweets regarding the **RUU TNI (Revision of the TNI Law) 2025**.
 
-### CORE CONTEXT (RUU TNI 2025)
-The revision is highly controversial. You must understand these specific articles to classify correctly:
-*   **Article 47 (Civilian Posts):** Allows active soldiers in 14+ civilian ministries. Critics call this "Dwifungsi" (Dual Function) or "Shadow Bureaucracy." Supporters call it "Competence."
-*   **Article 53 (Retirement Age):** Extends retirement age. Critics call this "Colonel Bottleneck" or "Gerontocracy."
-*   **Article 7 (Tasks):** Expands role to "Cyber Threats" and "Protection of Citizens Abroad." Critics fear "Surveillance," "Cyber Army," and "Kidnapping."
+### 1. CORE CONTEXT (The "Ground Truth")
+*   **Article 47 (Civilian Posts):** Allows active soldiers in 14+ ministries.
+    *   *Support Arg:* "Competence," "Discipline," "Efficiency."
+    *   *Oppose Arg:* "Dwifungsi," "Orba," "TNI Masuk Desa/Kantor," "Coup."
+*   **Article 53 (Retirement Age):** Extends age to 60/65.
+    *   *Oppose Arg:* "Gerontocracy," "Colonel Bottleneck," "Menghambat Regenerasi."
+*   **Article 7 (Tasks):** Adds "Cyber Threats" & "Protection of Citizens Abroad."
+    *   *Oppose Arg:* "Surveillance," "Cyber Army," "Mata-mata Diaspora."
 
-### STRICT ENTITY DEFINITIONS (CRITICAL FOR ACCURACY)
-1.  **PARCOK ("Partai Coklat"):** Refers to the **POLICE (Polri)**.
-    *   **RULE:** Hating "Parcok" is **NOT** hating the RUU TNI.
-    *   If a tweet attacks Parcok but ignores the TNI bill, label as **LABEL 1 (NEUTRAL/IRRELEVANT)**.
-    *   If a tweet compares them (e.g., "Parcok is bad, now Loreng wants to be bad too"), it is **LABEL 0 (OPPOSE)**.
-2.  **LORENG / WERENG / APARAT:**
-    *   "Loreng" = TNI (Relevant).
-    *   "Wereng" = Usually Police (Irrelevant), but check context.
-    *   "Aparat" = Ambiguous. If discussing "Jabatan Sipil" (Civilian jobs), it refers to TNI.
-3.  **MULYONO:** Derogatory name for President Jokowi.
-    *   **RULE:** If used with RUU TNI, it implies the bill is a tool for dynastic power/authoritarianism. Label **LABEL 0 (OPPOSE)**.
+### 2. STRICT CLASSIFICATION LOGIC (The "3-Gate" Rule)
+You must process every text through these three logical gates in order.
 
-### LABELING CATEGORIES
-*   **LABEL 2: POSITIVE (Support)**
-    *   Explicit agreement.
-    *   Keywords: "Setuju," "Dukung," "Profesional," "Sinergi," "Kesejahteraan Prajurit," "Efisiensi," "NKRI Harga Mati."
-*   **LABEL 0: NEGATIVE (Oppose)**
-    *   Disagreement, Fear, or Sarcasm regarding the bill.
-    *   Keywords: "Tolak," "Bahaya," "Orba," "Junta," "Dwifungsi," "Mundur," "Indonesia Gelap," "Peringatan Darurat," "Mulyono," "Surveillance," "Mata-mata."
-*   **LABEL 1: NEUTRAL (Unsure/Factual/Irrelevant)**
-    *   News headlines (e.g., "DPR passes bill").
-    *   Ambivalent statements.
-    *   **Off-topic rants about the Police (Parcok) that do not mention the TNI Bill.**
+**GATE 1: THE REALITY CHECK (News vs. Opinion)**
+*   Is the text a neutral news headline, a factual report, or an administrative announcement?
+    *   *Examples:* "DPR sahkan RUU TNI," "Poin-poin revisi UU TNI," "Demo terjadi di Gedung DPR."
+    *   **ACTION:** If YES, the label is **1 (NEUTRAL)**. Do not look for sentiment.
 
-### RESPONSE FORMAT
-You must output a JSON object containing the "reasoning" (in Indonesian) and the "label" (integer).
+**GATE 2: THE ENTITY CHECK (Target Identification)**
+You must determine if the anger is directed at TNI/RUU TNI or *other* entities.
+*   **CASE A: Police (Parcok/Wereng):**
+    *   Tweet attacks *only* Police? -> **Label 1 (IRRELEVANT)**.
+*   **CASE B: Kejaksaan / KUHP / MK:**
+    *   Tweet criticizes *only* "RUU Kejaksaan" (Prosecutors), "KUHP" (Criminal Code), or "Mahkamah Konstitusi" without mentioning TNI/Militer? -> **Label 1 (IRRELEVANT)**.
+    *   *Example (Irrelevant):* "RUU Kejaksaan bikin jaksa jadi superbody, bahaya!" (Label 1).
+    *   *Example (Irrelevant):* "Tolak KUHP pasal penghinaan presiden!" (Label 1).
+*   **CASE C: The Bundle (TNI + Others):**
+    *   Tweet attacks the *bundle* (e.g., "Tolak RUU TNI dan Polri", "Dwifungsi di Kejaksaan")? -> **Label 0 (OPPOSE)**.
+    *   *Note:* If the tweet mentions "TNI masuk Kejaksaan" (TNI entering Prosecutor's office), this IS relevant to Article 47. -> **Label 0**.
+
+**GATE 3: THE SENTIMENT CHECK (Decoding Slang)**
+*   **"Mulyono":** Referring to Jokowi by this name in 2025 is a HOSTILE signal. It implies dynastic interference. -> **Label 0 (Oppose)**.
+*   **"Indonesia Gelap" / "Peringatan Darurat":** These are symbols of resistance against the bill. -> **Label 0 (Oppose)**.
+*   **"Titip Sandal":** Typical Indonesian comment for "following this thread." -> **Label 1 (Neutral)**.
+*   **Sarcasm:** "Selamat datang Orba" (Welcome back New Order) is not a welcome; it is fear. -> **Label 0 (Oppose)**.
+
+### 3. LABEL DEFINITIONS
+*   **LABEL 2: POSITIVE (Support)**: Explicit agreement, praise for military professionalism.
+*   **LABEL 0: NEGATIVE (Oppose)**: Rejection, fear of Dwifungsi/Orba, sarcasm toward government/Mulyono.
+*   **LABEL 1: NEUTRAL (Factual/Irrelevant)**: News headlines, off-topic rants about Police/Jaksa/KUHP only.
+
+### 4. RESPONSE FORMAT
+You must output a JSON object. You must determine `is_factual_news` and `target_entity` FIRST.
+
+Example JSON:
+{
+  "is_factual_news": false,
+  "target_entity": "Kejaksaan Only",
+  "reasoning": "User criticizes RUU Kejaksaan regarding prosecutorial power. No mention of TNI or military bill.",
+  "label": 1
+}
 
 ### EXAMPLES (FEW-SHOT)
 
-Input: "Parcok anjing, kerjaannya nilang doang! Bubarin aja polisi."
-Output: {"reasoning": "User is attacking the Police (Parcok) regarding traffic tickets. This is unrelated to the RUU TNI.", "label": 1}
+Input: "Gila, RUU Kejaksaan makin ngawur, jaksa bisa nyadap sembarangan."
+Output: {"is_factual_news": false, "target_entity": "Kejaksaan Only", "reasoning": "Criticism is directed solely at the Prosecutor's Bill (RUU Kejaksaan) and wiretapping powers. No link to TNI.", "label": 1}
 
-Input: "Mantap, akhirnya tentara bisa masuk kementerian. Biar disiplin tuh PNS pemalas."
-Output: {"reasoning": "User supports Article 47 (Military in Ministries), believing it will improve discipline among civil servants.", "label": 2}
+Input: "Parah sih, masa TNI aktif boleh jabat di Kejaksaan Agung? Bubar jalan reformasi."
+Output: {"is_factual_news": false, "target_entity": "TNI + Kejaksaan", "reasoning": "User criticizes Article 47 which allows TNI personnel to sit in the Attorney General's Office (Kejaksaan). This is relevant to RUU TNI.", "label": 0}
 
-Input: "Gila ya Mulyono, dwifungsi dihidupkan lagi. Selamat datang Orba jilid 2."
-Output: {"reasoning": "User uses 'Mulyono' (negative indicator) and explicitly frames the bill as the return of 'Dwifungsi' and 'New Order' (Orba).", "label": 0}
+Input: "Tolak RUU TNI dan RUU Polri! Dua-duanya alat kekuasaan Mulyono."
+Output: {"is_factual_news": false, "target_entity": "TNI + Polri", "reasoning": "User explicitly opposes both bills, linking them to 'Mulyono' (Jokowi). Relevant to RUU TNI.", "label": 0}
 
-Input: "Bagus banget revisinya, biar sekalian aja tentara jadi gubernur semua. Hancur demokrasi."
-Output: {"reasoning": "User uses heavy sarcasm. 'Bagus banget' is negated by 'hancur demokrasi'. The suggestion of soldiers becoming governors is a critique of stratification.", "label": 0}
+Input: "Pasal penghinaan presiden di KUHP itu karet banget, bahaya buat demokrasi."
+Output: {"is_factual_news": false, "target_entity": "KUHP", "reasoning": "Criticism focuses on the Criminal Code (KUHP) and presidential insult articles. Irrelevant to RUU TNI.", "label": 1}
 
-Input: "Tolak RUU TNI! Jangan sampai pasal 7 dipakai buat mata-matain mahasiswa di luar negeri."
-Output: {"reasoning": "User opposes Article 7 specifically regarding the 'protection of citizens abroad' clause, interpreting it as surveillance.", "label": 0}
+Input: "Breaking News: DPR sahkan RUU TNI menjadi UU hari ini."
+Output: {"is_factual_news": true, "target_entity": "TNI", "reasoning": "Factual news headline about the ratification.", "label": 1}
 
 <|im_end|>
 <|im_start|>user
@@ -95,10 +113,10 @@ Classify this text: "{input_text}"
 def label_text(row):
     text = row["content"]
     # Initialize defaults to ensure data consistency on failure
-    row["sentiment"] = 0
+    row["sentiment"] = 1
     try:
         response = ollama.chat(
-            model="qwen2.5:7b",
+            model="qwen2.5:7b-instruct",
             messages=[
                 {"role": "system", "content": PROMPT},
                 {"role": "user", "content": f"Classify this text: \"{text}\""}

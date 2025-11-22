@@ -3,471 +3,511 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Label Correction Suite v2.1</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Relevancy Correction - Card View</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Simple transition for hover */
-        tbody tr:hover { background-color: #f9fafb; }
+        :root {
+            --bg-dark: #1e1e2e;
+            --bg-panel: #252537;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #3b82f6; /* Blue for Relevant */
 
-        /* Fix table header */
-        .table-container {
-            max-height: 75vh;
-            overflow-y: auto;
-        }
-        thead th {
-            position: sticky;
-            top: 0;
-            background-color: #f3f4f6; /* bg-gray-100 */
-            z-index: 10;
-        }
+            /* Adapted Colors from your suite */
+            --rel-color: #3b82f6; /* Relevant (1) - Blue */
+            --irr-color: #9333ea; /* Irrelevant (0) - Purple */
+            --unc-color: #606060; /* Uncorrected */
 
-        /* Style for the bulk action bar */
-        #bulk-action-bar {
-            position: sticky;
-            top: 41px; /* Height of the header row */
-            z-index: 9;
+            --border: #333;
+            --complete-bg: #1e283d; /* Dark Blue Tint for complete */
         }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 320px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+        }
+
+        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .file-input-container { padding: 10px; border-bottom: 1px solid var(--border); }
+        #cluster-list { flex: 1; overflow-y: auto; }
+
+        .cluster-item {
+            padding: 12px; border-bottom: 1px solid #333; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.2s;
+        }
+        .cluster-item:hover { background-color: #333; }
+
+        /* States */
+        .cluster-item.active { background-color: #2d3748; border-left: 4px solid var(--rel-color); }
+        .cluster-item.complete {
+            background-color: var(--complete-bg);
+            border-left: 4px solid var(--accent);
+        }
+
+        .cluster-info { flex: 1; }
+        .cluster-meta { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;}
+        .cluster-badge { font-size: 0.75em; padding: 2px 6px; border-radius: 4px; color: #fff; font-weight: bold; width: fit-content;}
+        .todo-count { font-size: 0.75em; color: var(--text-muted); }
+        .check-icon { color: var(--rel-color); font-weight: bold; margin-right: 5px; display: none; }
+        .complete .check-icon { display: inline; }
+
+        /* --- Main Content --- */
+        .main { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; }
+
+        /* --- Dashboard --- */
+        .dashboard {
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 15px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            height: 140px;
+            flex-shrink: 0;
+        }
+
+        .chart-container { width: 140px; height: 140px; position: relative; }
+        .stats-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .stat-row { display: flex; gap: 15px; margin-top: 10px; }
+        .stat-box {
+            background: #1e1e2e; padding: 8px 12px; border-radius: 6px;
+            border: 1px solid var(--border); font-size: 0.9em; min-width: 100px;
+        }
+        .stat-val { font-size: 1.2em; font-weight: bold; display: block; }
+        .stat-label { font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; }
+
+        /* --- Filter Bar --- */
+        .filter-bar {
+            padding: 10px 20px; background-color: #1a1a26; border-bottom: 1px solid var(--border);
+            display: flex; gap: 15px; align-items: center; flex-shrink: 0;
+        }
+        .search-box {
+            background: #2a2a3d; border: 1px solid var(--border); color: white;
+            padding: 8px; border-radius: 4px; width: 250px; outline: none;
+        }
+        .search-box:focus { border-color: var(--accent); }
+        .filter-group { display: flex; background: #2a2a3d; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+        .filter-btn {
+            background: none; border: none; color: var(--text-muted); padding: 6px 12px; cursor: pointer;
+            border-right: 1px solid var(--border); font-size: 0.9em;
+        }
+        .filter-btn:last-child { border-right: none; }
+        .filter-btn:hover { background: #333; color: white; }
+        .filter-btn.active { background: var(--accent); color: white; }
+
+        /* --- Sample List --- */
+        #sample-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+
+        .card { background-color: #2a2a3d; border: 1px solid var(--border); border-radius: 6px; padding: 15px; }
+        .card.uncorrected { border-left: 4px solid var(--text-muted); }
+        .card.corrected { border-left: 4px solid var(--rel-color); }
+
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85em; color: var(--text-muted); }
+        .card-content { font-size: 1.1em; line-height: 1.5; margin-bottom: 15px; }
+        .card-actions { display: flex; gap: 10px; align-items: center; }
+
+        /* Custom Radios/Buttons */
+        .label-radio { display: none; }
+        .label-btn {
+            padding: 6px 16px; border: 1px solid var(--border); border-radius: 20px;
+            cursor: pointer; font-size: 0.9em; color: var(--text-muted); user-select: none; transition: 0.2s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .label-radio:checked + .label-btn { color: white; border-color: transparent; transform: scale(1.05); }
+
+        /* Colors for selection */
+        .label-radio[value="0"]:checked + .label-btn { background-color: var(--irr-color); } /* Irrelevant */
+        .label-radio[value="1"]:checked + .label-btn { background-color: var(--rel-color); } /* Relevant */
+
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-success { background-color: var(--rel-color); }
+        .btn-save { background-color: #10b981; width: 100%; margin-top: 10px; }
+        .prob-meter { font-size: 0.75em; background: #111; padding: 2px 5px; border-radius: 3px; }
+
+        .status-pill {
+            font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
     </style>
 </head>
-<body class="bg-gray-100 font-sans p-4 md:p-8">
+<body>
 
-    <div class="max-w-screen-2xl mx-auto">
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-header">
+        <span>Relevancy Labeler</span>
+        <span id="total-progress" style="font-size: 0.8em; color: var(--rel-color)">0%</span>
+    </div>
+    <div class="file-input-container">
+        <input type="file" id="fileInput" accept=".json" style="color: white; max-width: 100%;">
+    </div>
+    <div id="cluster-list">
+        <div style="padding: 20px; text-align: center; color: gray;">Load JSON to begin</div>
+    </div>
+    <div style="padding: 10px; border-top: 1px solid #333;">
+        <button id="downloadBtn" class="btn btn-save">Save & Download JSON</button>
+    </div>
+</div>
 
-        <!-- Header -->
-        <div class="mb-6 text-center">
-            <h1 class="text-3xl font-bold text-gray-800">Label Correction Suite v2.1</h1>
-            <p class="text-gray-600">Load, filter, search, and bulk-correct your LLM-generated labels.</p>
-        </div>
-
-        <div class="flex flex-col md:flex-row md:space-x-6">
-
-            <!-- Sidebar (Filters & Controls) -->
-            <div class="md:w-1/4 mb-6 md:mb-0">
-                <div class="bg-white p-6 rounded-lg shadow-lg space-y-6">
-
-                    <!-- File Loader -->
-                    <div>
-                        <label for="file-loader" class="block text-sm font-medium text-gray-700 mb-2">1. Load Data File</label>
-                        <input type="file" id="file-loader" accept=".json" class="block w-full text-sm text-gray-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-md file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-blue-50 file:text-blue-700
-                            hover:file:bg-blue-100 cursor-pointer"/>
-                        <p class="text-xs text-gray-500 mt-1">Upload the `data_for_suite.json` file.</p>
-                    </div>
-
-                    <!-- Filters -->
-                    <div>
-                        <label for="cluster-filter" class="block text-sm font-medium text-gray-700 mb-2">2. Filter by Cluster</label>
-                        <select id="cluster-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="all">All Clusters</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="label-filter" class="block text-sm font-medium text-gray-700 mb-2">3. Filter by Label</label>
-                        <select id="label-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="all">All Labels</option>
-                            <!-- UPDATED: 1 is Relevant, 0 is Irrelevant -->
-                            <option value="1">Relevant (1)</option>
-                            <option value="0">Irrelevant (0)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">4. Filter by Status</label>
-                        <select id="status-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="all">All Items</option>
-                            <option value="uncorrected">Uncorrected</option>
-                            <option value="corrected">Corrected</option>
-                        </select>
-                    </div>
-
-                    <!-- Search Bar -->
-                    <div>
-                        <label for="search-bar" class="block text-sm font-medium text-gray-700 mb-2">5. Search Content</label>
-                        <input type="text" id="search-bar" placeholder="Enter keywords..." class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-
-
-                    <!-- Export Button -->
-                    <div>
-                        <label for="export-button" class="block text-sm font-medium text-gray-700 mb-2">6. Export Data</label>
-                        <button id="export-button" disabled class="w-full py-2 px-4 bg-gray-400 text-white font-semibold rounded-md shadow-sm cursor-not-allowed">
-                            Export Corrected Data
-                        </button>
-                        <p class="text-xs text-gray-500 mt-1">Downloads a new JSON file with all your changes.</p>
-                    </div>
-
-                </div>
+<!-- MAIN -->
+<div class="main">
+    <div class="dashboard">
+        <div class="chart-container"><canvas id="distChart"></canvas></div>
+        <div class="stats-panel">
+            <div style="display: flex; justify-content: space-between;">
+                <h2 id="current-cluster-title" style="margin: 0;">No Cluster Selected</h2>
+                <button id="propagateBtn" class="btn btn-success" style="display: none; font-size: 0.8em;">
+                    Review All as Majority
+                </button>
             </div>
-
-            <!-- Main Content (Data Table) -->
-            <div class="md:w-3/4">
-                <div class="bg-white p-6 rounded-lg shadow-lg">
-                    <div id="stats" class="mb-4 text-sm text-gray-600">
-                        Please load a file to begin.
-                    </div>
-                    <div class="table-container border rounded-lg">
-                        <table class="w-full text-sm text-left text-gray-700">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                                <tr>
-                                    <th scope="col" class="p-3 w-12">
-                                        <input type="checkbox" id="select-all-checkbox" title="Select all visible items" class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
-                                    </th>
-                                    <th scope="col" class="p-3 w-16">ID</th>
-                                    <th scope="col" class="p-3 w-20">Cluster</th>
-                                    <th scope="col" class="p-3 w-20">Prob.</th>
-                                    <th scope="col" class="p-3 w-1/2">Content</th>
-                                    <th scope="col" class="p-3 w-24">Current Label</th>
-                                    <th scope="col" class="p-3 w-40">Actions</th>
-                                </tr>
-                            </thead>
-                            <!-- Bulk Action Bar -->
-                            <tbody id="bulk-action-bar" class="hidden">
-                                <tr class="bg-blue-50 border-b">
-                                    <td colspan="7" class="p-3">
-                                        <div class="flex items-center space-x-4">
-                                            <span id="bulk-select-count" class="text-sm font-medium text-blue-800">0 items selected</span>
-                                            <!-- UPDATED: Buttons call corrected IDs -->
-                                            <button id="bulk-set-relevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Set as Relevant (1)</button>
-                                            <button id="bulk-set-irrelevant" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700">Set as Irrelevant (0)</button>
-                                            <button id="bulk-revert" class="py-1 px-3 text-xs font-medium rounded-md shadow-sm text-gray-800 bg-yellow-400 hover:bg-yellow-500">Revert Selected</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tbody id="data-table-body" class="divide-y">
-                                <!-- Rows will be injected by JavaScript -->
-                                <tr id="placeholder-row">
-                                    <td colspan="7" class="p-6 text-center text-gray-400">No data loaded.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="stat-row">
+                <div class="stat-box" style="border-color: var(--rel-color)">
+                    <span class="stat-val" id="count-rel" style="color: var(--rel-color)">0</span>
+                    <span class="stat-label">Relevant (1)</span>
+                </div>
+                <div class="stat-box" style="border-color: var(--irr-color)">
+                    <span class="stat-val" id="count-irr" style="color: var(--irr-color)">0</span>
+                    <span class="stat-label">Irrelevant (0)</span>
+                </div>
+                <div class="stat-box" style="border-color: #666">
+                    <span class="stat-val" id="count-unc" style="color: #aaa">0</span>
+                    <span class="stat-label">Uncorrected</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // --- Global State ---
-        let globalData = [];
-        let currentFilteredData = [];
-        let selectedItems = new Set();
+    <div class="filter-bar">
+        <input type="text" id="searchInput" class="search-box" placeholder="Search content...">
+        <div class="filter-group">
+            <button class="filter-btn active" onclick="setFilter('all')">All</button>
+            <button class="filter-btn" onclick="setFilter('uncorrected')">Uncorrected</button>
+            <button class="filter-btn" onclick="setFilter('1')" style="color: var(--rel-color)">Relevant</button>
+            <button class="filter-btn" onclick="setFilter('0')" style="color: var(--irr-color)">Irrelevant</button>
+        </div>
+    </div>
+    <div id="sample-container"></div>
+</div>
 
-        // --- UPDATED MAP: 1 = Relevant, 0 = Irrelevant ---
-        const CLASS_MAP = { 1: "Relevant", 0: "Irrelevant" };
+<script>
+    // --- Global Data (Flat Array) ---
+    let globalData = [];
+    let clusterGroups = {}; // Maps cluster_id -> [items]
+    let currentClusterId = null;
 
-        // Updated Colors to match new IDs (1 gets blue, 0 gets purple)
-        const LABEL_COLORS = {
-            1: "bg-blue-100 text-blue-800",
-            0: "bg-purple-100 text-purple-800"
-        };
-        const STATUS_COLORS = {
-            uncorrected: "bg-white",
-            corrected: "bg-green-50"
-        };
-        const ACTION_BUTTON_CLASSES = "py-1 px-3 text-xs font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1";
-        const FIX_BUTTON_CLASSES = "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500";
-        const REVERT_BUTTON_CLASSES = "bg-yellow-400 text-gray-800 hover:bg-yellow-500 focus:ring-yellow-500";
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let myChart = null;
 
-
-        // --- DOM Elements ---
-        const fileLoader = document.getElementById('file-loader');
-        const clusterFilter = document.getElementById('cluster-filter');
-        const labelFilter = document.getElementById('label-filter');
-        const statusFilter = document.getElementById('status-filter');
-        const searchBar = document.getElementById('search-bar');
-        const exportButton = document.getElementById('export-button');
-        const tableBody = document.getElementById('data-table-body');
-        const statsDisplay = document.getElementById('stats');
-        const placeholderRow = document.getElementById('placeholder-row');
-
-        const selectAllCheckbox = document.getElementById('select-all-checkbox');
-        const bulkActionBar = document.getElementById('bulk-action-bar');
-        const bulkSelectCount = document.getElementById('bulk-select-count');
-        const bulkSetRelevant = document.getElementById('bulk-set-relevant');
-        const bulkSetIrrelevant = document.getElementById('bulk-set-irrelevant');
-        const bulkRevert = document.getElementById('bulk-revert');
-
-        // --- Event Listeners ---
-        fileLoader.addEventListener('change', handleFileLoad);
-        clusterFilter.addEventListener('change', renderTable);
-        labelFilter.addEventListener('change', renderTable);
-        statusFilter.addEventListener('change', renderTable);
-        searchBar.addEventListener('input', renderTable); // Fuzzy search
-        exportButton.addEventListener('click', handleExport);
-
-        // Bulk action listeners
-        selectAllCheckbox.addEventListener('change', handleSelectAll);
-        tableBody.addEventListener('change', handleRowCheckbox); // Event delegation
-
-        // UPDATED: Bulk Set Relevant passes 1, Irrelevant passes 0
-        bulkSetRelevant.addEventListener('click', () => handleBulkFix(1));
-        bulkSetIrrelevant.addEventListener('click', () => handleBulkFix(0));
-        bulkRevert.addEventListener('click', handleBulkRevert);
-
-        // --- Logic ---
-
-        function handleFileLoad(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    globalData = JSON.parse(e.target.result);
-                    if (!Array.isArray(globalData) || globalData.length === 0) {
-                        throw new Error("Data is not a valid JSON array or is empty.");
-                    }
-
-                    // --- VALIDATION: Check for 'content' field ---
-                    const firstItem = globalData[0];
-                    if (!('id' in firstItem && 'cluster' in firstItem && 'content' in firstItem && 'relevant' in firstItem && 'status' in firstItem)) {
-                         throw new Error("JSON is missing required fields: id, cluster, content, label, status.");
-                    }
-
-                    placeholderRow.classList.add('hidden');
-                    populateFilters();
-                    renderTable();
-                    exportButton.disabled = false;
-                    exportButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                    exportButton.classList.add('bg-green-600', 'hover:bg-green-700');
-                } catch (err) {
-                    statsDisplay.textContent = `Error: ${err.message}`;
-                    globalData = [];
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function populateFilters() {
-            clusterFilter.innerHTML = '<option value="all">All Clusters</option>';
-            const clusters = new Set(globalData.map(item => item.cluster));
-            const sortedClusters = Array.from(clusters).sort((a, b) => a - b);
-
-            for (const clusterId of sortedClusters) {
-                const option = document.createElement('option');
-                option.value = clusterId;
-                option.textContent = clusterId === -1 ? "Noise (-1)" : `Cluster ${clusterId}`;
-                clusterFilter.appendChild(option);
+    // --- Init Chart ---
+    function initChart() {
+        const ctx = document.getElementById('distChart').getContext('2d');
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Relevant', 'Irrelevant'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['#3b82f6', '#9333ea'], // Blue, Purple
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '70%',
+                plugins: { legend: { display: false } }
             }
-        }
+        });
+    }
+    initChart();
 
-        function renderTable() {
-            // 1. Get filter values
-            const clusterVal = clusterFilter.value;
-            const labelVal = labelFilter.value;
-            const statusVal = statusFilter.value;
-            const searchVal = searchBar.value.toLowerCase(); // Search value
+    // --- Load Data ---
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const rawData = JSON.parse(event.target.result);
+                if (!Array.isArray(rawData)) throw new Error("Expected JSON array");
+                globalData = rawData;
 
-            // 2. Apply filters
-            currentFilteredData = globalData.filter(item => {
-                const clusterMatch = clusterVal === 'all' || item.cluster.toString() === clusterVal;
-                const labelMatch = labelVal === 'all' || item.relevant.toString() === labelVal;
-                const statusMatch = statusVal === 'all' || item.status === statusVal;
-                // --- SEARCH LOGIC ---
-                const searchMatch = searchVal === '' || (item.content && item.content.toLowerCase().includes(searchVal));
+                processDataIntoClusters();
+                renderSidebar();
+                updateTotalProgress();
+                alert(`Loaded ${globalData.length} samples.`);
+            } catch (err) { console.error(err); alert("Error parsing JSON: " + err.message); }
+        };
+        reader.readAsText(file);
+    });
 
-                return clusterMatch && labelMatch && statusMatch && searchMatch;
+    // --- Grouping Logic ---
+    function processDataIntoClusters() {
+        clusterGroups = {};
+        globalData.forEach(item => {
+            const cid = item.cluster;
+            if (!clusterGroups[cid]) clusterGroups[cid] = [];
+            clusterGroups[cid].push(item);
+        });
+    }
+
+    // --- Sidebar ---
+    const clusterList = document.getElementById('cluster-list');
+
+    function renderSidebar() {
+        clusterList.innerHTML = '';
+        const clusterIds = Object.keys(clusterGroups).sort((a, b) => parseInt(a) - parseInt(b));
+
+        clusterIds.forEach(cid => {
+            const items = clusterGroups[cid];
+            const div = document.createElement('div');
+            div.id = `cluster-row-${cid}`;
+            div.className = 'cluster-item';
+            div.onclick = () => loadCluster(cid);
+
+            div.innerHTML = generateSidebarHTML(cid, items);
+            if (isClusterComplete(items)) div.classList.add('complete');
+
+            clusterList.appendChild(div);
+        });
+    }
+
+    function generateSidebarHTML(cid, items) {
+        const counts = getCounts(items);
+        const majLabel = counts[1] >= counts[0] ? 1 : 0;
+        const purity = items.length > 0 ? Math.round((counts[majLabel] / items.length) * 100) : 0;
+        const color = majLabel === 1 ? 'var(--rel-color)' : 'var(--irr-color)';
+        const uncorrected = counts['uncorrected'];
+
+        const labelText = majLabel === 1 ? 'Rel' : 'Irr';
+        const displayId = cid === "-1" ? "Noise (-1)" : `Cluster ${cid}`;
+
+        return `
+            <div class="cluster-info"><div><span class="check-icon">✔</span> <strong>${displayId}</strong></div></div>
+            <div class="cluster-meta">
+                <span class="cluster-badge" style="background:${color}">${purity}% ${labelText}</span>
+                <span class="todo-count">${uncorrected} to review</span>
+            </div>
+        `;
+    }
+
+    function updateSidebarRow(cid) {
+        const row = document.getElementById(`cluster-row-${cid}`);
+        if (!row) return;
+        const items = clusterGroups[cid];
+        row.innerHTML = generateSidebarHTML(cid, items);
+        if (isClusterComplete(items)) row.classList.add('complete'); else row.classList.remove('complete');
+        updateTotalProgress();
+    }
+
+    function isClusterComplete(items) {
+        return items.every(i => i.status === 'corrected');
+    }
+
+    function updateTotalProgress() {
+        const clusterIds = Object.keys(clusterGroups);
+        let completed = 0;
+        clusterIds.forEach(cid => { if(isClusterComplete(clusterGroups[cid])) completed++; });
+        document.getElementById('total-progress').innerText = `${completed}/${clusterIds.length} Done`;
+    }
+
+    // --- Stats Utils ---
+    function getCounts(items) {
+        let c = { 0: 0, 1: 0, 'uncorrected': 0 };
+        items.forEach(i => {
+            c[i.relevant]++;
+            if (i.status === 'uncorrected') c['uncorrected']++;
+        });
+        return c;
+    }
+
+    // --- Main View ---
+    const currentClusterTitle = document.getElementById('current-cluster-title');
+    const propagateBtn = document.getElementById('propagateBtn');
+
+    function loadCluster(cid) {
+        currentClusterId = cid;
+        document.querySelectorAll('.cluster-item').forEach(el => el.classList.remove('active'));
+        const row = document.getElementById(`cluster-row-${cid}`);
+        if(row) row.classList.add('active');
+
+        const items = clusterGroups[cid];
+        const displayId = cid === "-1" ? "Noise (-1)" : `Cluster ${cid}`;
+        currentClusterTitle.innerText = displayId;
+
+        propagateBtn.style.display = 'block';
+        updateStats();
+        renderSamples();
+
+        propagateBtn.onclick = () => {
+            const counts = getCounts(items);
+            // Determine majority based on ALL items (LLM guess)
+            const maj = counts[1] >= counts[0] ? 1 : 0;
+            let changed = 0;
+
+            items.forEach(item => {
+                if (item.status === 'uncorrected') {
+                    item.relevant = maj;
+                    item.status = 'corrected';
+                    changed++;
+                }
             });
 
-            // 3. Clear table
-            tableBody.innerHTML = '';
+            updateStats();
+            renderSamples();
+            alert(`Marked ${changed} items as ${maj === 1 ? "Relevant" : "Irrelevant"} (Majority).`);
+        };
+    }
 
-            // 4. Update stats
-            updateStats(currentFilteredData.length, globalData.length);
+    function updateStats() {
+        if (currentClusterId === null) return;
+        const items = clusterGroups[currentClusterId];
+        const counts = getCounts(items);
 
-            // 5. Update "Select All" checkbox state
-            selectAllCheckbox.checked = currentFilteredData.length > 0 && currentFilteredData.every(item => selectedItems.has(item.id));
-            selectAllCheckbox.indeterminate = currentFilteredData.length > 0 &&
-                                              currentFilteredData.some(item => selectedItems.has(item.id)) &&
-                                              !selectAllCheckbox.checked;
+        document.getElementById('count-rel').innerText = counts[1];
+        document.getElementById('count-irr').innerText = counts[0];
+        document.getElementById('count-unc').innerText = counts['uncorrected'];
 
+        myChart.data.datasets[0].data = [counts[1], counts[0]];
+        myChart.update();
+        updateSidebarRow(currentClusterId);
+    }
 
-            // 6. Render rows
-            if (currentFilteredData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400">No items match your filters.</td></tr>';
-                return;
+    // --- Filtering & Rendering ---
+    const sampleContainer = document.getElementById('sample-container');
+    const searchInput = document.getElementById('searchInput');
+
+    searchInput.addEventListener('input', (e) => { searchQuery = e.target.value.toLowerCase(); renderSamples(); });
+
+    window.setFilter = (filterType) => {
+        currentFilter = filterType;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            // Very simple matching logic for UI active state
+            if(btn.innerText.toLowerCase() === filterType ||
+              (filterType === '1' && btn.innerText === 'Relevant') ||
+              (filterType === '0' && btn.innerText === 'Irrelevant') ||
+              (filterType === 'uncorrected' && btn.innerText === 'Uncorrected') ||
+              (filterType === 'all' && btn.innerText === 'All')) {
+                btn.classList.add('active');
             }
+        });
+        renderSamples();
+    };
 
-            const fragment = document.createDocumentFragment();
-            for (const item of currentFilteredData) {
-                const row = document.createElement('tr');
-                row.className = `${STATUS_COLORS[item.status]} transition-colors duration-150 ease-in-out`;
+    function renderSamples() {
+        if (currentClusterId === null) return;
+        const items = clusterGroups[currentClusterId];
+        sampleContainer.innerHTML = '';
 
-                const labelName = CLASS_MAP[item.relevant] || 'Unknown';
-                const labelColor = LABEL_COLORS[item.relevant] || 'bg-gray-100';
+        const filtered = items.filter(item => {
+            if (searchQuery && !item.content.toLowerCase().includes(searchQuery)) return false;
 
-                // --- Use 'content' field ---
-                const truncatedText = (item.content.length > 1000) ? item.content.substring(0, 1000) + '...' : item.content;
+            if (currentFilter === 'all') return true;
+            if (currentFilter === 'uncorrected') return item.status === 'uncorrected';
+            if (currentFilter === '1') return item.relevant === 1;
+            if (currentFilter === '0') return item.relevant === 0;
+            return true;
+        });
 
-                // Create Action Button
-                const actionButton = document.createElement('button');
-                actionButton.className = `${ACTION_BUTTON_CLASSES}`;
+        // Sort: Uncorrected first
+        filtered.sort((a, b) => {
+            if (a.status === 'uncorrected' && b.status === 'corrected') return -1;
+            if (a.status === 'corrected' && b.status === 'uncorrected') return 1;
+            return 0;
+        });
 
-                if (item.status === 'uncorrected') {
-                    // UPDATED: Flip logic based on new map
-                    const targetLabel = item.relevant === 1 ? 0 : 1;
-                    actionButton.textContent = `Set to ${CLASS_MAP[targetLabel]} (${targetLabel})`;
-                    actionButton.classList.add(...FIX_BUTTON_CLASSES.split(' '));
-                } else {
-                    actionButton.textContent = `Revert to ${CLASS_MAP[item.original_label]}`;
-                    actionButton.classList.add(...REVERT_BUTTON_CLASSES.split(' '));
-                }
+        const limit = 100;
+        filtered.slice(0, limit).forEach(item => {
+            const card = document.createElement('div');
+            card.className = `card ${item.status}`;
+            const uniqueName = `item_${item.id}`;
 
-                actionButton.onclick = () => handleLabelFix(item.id);
+            const probPercent = (item.probability * 100).toFixed(1);
 
-                const isChecked = selectedItems.has(item.id);
-
-                row.innerHTML = `
-                    <td class="p-3">
-                        <input type="checkbox" class="row-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500" data-id="${item.id}" ${isChecked ? 'checked' : ''}>
-                    </td>
-                    <td class="p-3 font-medium text-gray-500">${item.id}</td>
-                    <td class="p-3 font-semibold">${item.cluster}</td>
-                    <td class="p-3 text-gray-600">${item.probability.toFixed(4)}</td>
-                    <td class="p-3 text-gray-800">${truncatedText}</td>
-                    <td class="p-3">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${labelColor}">
-                            ${labelName} (${item.relevant})
-                        </span>
-                    </td>
-                    <td class="p-3"></td>
-                `;
-
-                row.lastElementChild.appendChild(actionButton);
-                fragment.appendChild(row);
-            }
-            tableBody.appendChild(fragment);
-        }
-
-        function updateStats(filteredCount, totalCount) {
-            const correctedCount = globalData.filter(d => d.status === 'corrected').length;
-            statsDisplay.innerHTML = `
-                Showing <strong class="text-blue-600">${filteredCount}</strong> of
-                <strong class="text-gray-800">${totalCount}</strong> items. |
-                <strong class="text-green-600">${correctedCount}</strong> items corrected.
+            card.innerHTML = `
+                <div class="card-header">
+                    <span>ID: ${item.id}</span>
+                    <span class="prob-meter">Prob: ${probPercent}%</span>
+                </div>
+                <div class="card-content">${highlightText(item.content, searchQuery)}</div>
+                <div class="card-actions">
+                    <label>
+                        <input type="radio" name="${uniqueName}" value="1" class="label-radio" ${item.relevant === 1 ? 'checked' : ''}>
+                        <span class="label-btn">Relevant (1)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="${uniqueName}" value="0" class="label-radio" ${item.relevant === 0 ? 'checked' : ''}>
+                        <span class="label-btn">Irrelevant (0)</span>
+                    </label>
+                    ${item.status === 'corrected' ? `<span class="status-pill" style="background:#10b981; color:black;">Corrected</span>` : ''}
+                </div>
             `;
+
+            card.querySelectorAll('input').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const newVal = parseInt(e.target.value);
+                    item.relevant = newVal;
+                    item.status = 'corrected'; // Mark as manually checked
+                    updateStats();
+                    // Optional: Re-render card to show "Corrected" pill?
+                    // For now, let's just update stats to keep UI snappy.
+                });
+            });
+
+            sampleContainer.appendChild(card);
+        });
+
+        if(filtered.length > limit) {
+            const msg = document.createElement('div');
+            msg.style.textAlign = 'center'; msg.style.color = '#666';
+            msg.innerText = `Showing top ${limit} of ${filtered.length} matches...`;
+            sampleContainer.appendChild(msg);
         }
+    }
 
-        // --- Single Item Fix ---
-        function handleLabelFix(id) {
-            const item = globalData.find(d => d.id === id);
-            if (!item) return;
+    function highlightText(text, query) {
+        if(!query) return text;
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<span style="background:#3b82f6; color:white;">$1</span>');
+    }
 
-            if (item.status === 'uncorrected') {
-                // UPDATED: Flip logic. If currently 1, make 0. If 0, make 1.
-                itemrelevant = item.relevant === 1 ? 0 : 1;
-                item.status = 'corrected';
-            } else {
-                itemrelevant = item.original_label; // Revert to original
-                item.status = 'uncorrected';
-            }
+    // --- Export (Flat Array) ---
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        if (!globalData || globalData.length === 0) return;
 
-            renderTable(); // Re-render the whole table to reflect change
-            updateBulkActionBar(); // Update selection status
-        }
+        const jsonStr = JSON.stringify(globalData, null, 2);
+        const blob = new Blob([jsonStr], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
 
-        // --- Bulk Action Logic ---
-        function handleRowCheckbox(event) {
-            if (!event.target.classList.contains('row-checkbox')) return;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "relevancy_corrected.json";
+        document.body.appendChild(a);
+        a.click();
 
-            const checkbox = event.target;
-            const id = parseInt(checkbox.dataset.id, 10);
-
-            if (checkbox.checked) {
-                selectedItems.add(id);
-            } else {
-                selectedItems.delete(id);
-            }
-            updateBulkActionBar();
-
-            // Update select-all checkbox state
-            selectAllCheckbox.checked = currentFilteredData.length > 0 && currentFilteredData.every(item => selectedItems.has(item.id));
-            selectAllCheckbox.indeterminate = currentFilteredData.length > 0 &&
-                                              currentFilteredData.some(item => selectedItems.has(item.id)) &&
-                                              !selectAllCheckbox.checked;
-        }
-
-        function handleSelectAll(event) {
-            const isChecked = event.target.checked;
-            // Only select/deselect the *currently visible* filtered items
-            for (const item of currentFilteredData) {
-                if (isChecked) {
-                    selectedItems.add(item.id);
-                } else {
-                    selectedItems.delete(item.id);
-                }
-            }
-            renderTable(); // Re-render to show all checkboxes as checked/unchecked
-            updateBulkActionBar();
-        }
-
-        function updateBulkActionBar() {
-            const count = selectedItems.size;
-            if (count > 0) {
-                bulkActionBar.classList.remove('hidden');
-                bulkSelectCount.textContent = `${count} item(s) selected`;
-            } else {
-                bulkActionBar.classList.add('hidden');
-            }
-        }
-
-        function handleBulkFix(newLabel) {
-            let itemsChanged = 0;
-            for (const id of selectedItems) {
-                const item = globalData.find(d => d.id === id);
-                if (item) {
-                    item.relevant = newLabel;
-                    item.status = 'corrected';
-                    itemsChanged++;
-                }
-            }
-            console.log(`Applied label ${newLabel} to ${itemsChanged} items.`);
-            selectedItems.clear();
-            renderTable();
-            updateBulkActionBar();
-        }
-
-        function handleBulkRevert() {
-            let itemsChanged = 0;
-            for (const id of selectedItems) {
-                const item = globalData.find(d => d.id === id);
-                if (item) {
-                    item.relevant = item.original_label;
-                    item.status = 'uncorrected';
-                    itemsChanged++;
-                }
-            }
-            console.log(`Reverted ${itemsChanged} items.`);
-            selectedItems.clear();
-            renderTable();
-            updateBulkActionBar();
-        }
-
-        function handleExport() {
-            const dataStr = JSON.stringify(globalData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'data_corrected.json';
-            document.body.appendChild(a);
-            a.click();
+        setTimeout(() => {
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
+            window.URL.revokeObjectURL(url);
+        }, 0);
+    });
 
-    </script>
+</script>
 </body>
 </html>
