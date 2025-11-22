@@ -5,16 +5,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="77309551-1ef0-489a-97ca-b088f7b9f9ef" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/relevancy-classifier/10. clustering_analysis.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/relevancy-classifier/9. sentiment_training.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/relevancy-classifier/sentiment_labeling.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/2025-graduation-research.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/2025-graduation-research.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/11. time_series_analysis.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/out/relevancy_test_data_corrected.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/out/sentiment_train_data_labeled.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/out/sentiment_train_data_unlabeled.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/relevancy-classifier/sentiment_corrected.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/relevancy-classifier/1.1. labeling_fix.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/1.1. labeling_fix.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/dream_cluster.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/1.1. labeling_fix.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/2. relevancy_labeling_fix.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/10. clustering_analysis.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/10. clustering_analysis.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/2. clustering.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/4. llm_labeling.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/7. sentiment_splits.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/7. sentiment_splits.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/relevancy-classifier/8. sentiment_llm_labeling.py" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/8. sentiment_llm_labeling.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/relevancy-classifier/labeling.html" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/relevancy_labeling.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/relevancy-classifier/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/9. sentiment_training.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/9. sentiment_training.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/bucketing.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/cleaning.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/labeling_data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/relevancy.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/relevancy_labeling.html" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/relevancy_labeling.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/relevancy_test_data_corrected.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/relevancy_test_data_for_suite.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/relevancy-classifier/sentiment_labeling.html" beforeDir="false" afterPath="$PROJECT_DIR$/relevancy-classifier/sentiment_labeling.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,8 +37,8 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
-        <option value="Jupyter Notebook" />
         <option value="HTML File" />
+        <option value="Jupyter Notebook" />
       </list>
     </option>
   </component>
@@ -71,6 +83,9 @@
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/relevancy-classifier" />
     </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/relevancy-classifier/out" />
+    </key>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -93,11 +108,22 @@
       <workItem from="1763605618659" duration="154000" />
       <workItem from="1763623448154" duration="4015000" />
       <workItem from="1763649097170" duration="3636000" />
-      <workItem from="1763683044421" duration="10855000" />
+      <workItem from="1763683044421" duration="52345000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="jupyter-line">
+          <url>file://$PROJECT_DIR$/relevancy-classifier/9. sentiment_training.ipynb</url>
+          <line>242</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
