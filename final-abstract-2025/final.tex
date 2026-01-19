@@ -1,0 +1,75 @@
+\documentclass{jabstract}
+\usepackage{url}
+\graphicspath{{images/eps}}
+\jtitle{インドネシアにおける2025年軍事法案を巡る世論に関するX（旧Twitter）上の感情分析}
+\jauthor{クリスティアン　ハルジュノ}
+\jaffiliation{情報工学分野}
+\jteacher{本間宏利}
+
+\begin{document}
+\maketitle
+
+\begin{multicols}{2}
+  
+\section{背景と目的}
+2025年3月のインドネシア国軍法案（RUU TNI）成立は、現役軍人の文民職就任（第47条）による「軍の二重機能」復活の懸念から、広範な社会的論争を招いた\cite{HRW2024}。本研究は、X（旧Twitter）における\#TolakRUUTNI等の抗議投\~25万件を対象とし、法案成立前後の感情極性の推移と不満の主要因を定量的に明らかにする\cite{CNN2024}。
+\section{研究方法}
+\subsection{Labeling for Generative AI Fine-tuning}
+We prepared 20,000-sample subsets for each task, adapting the labeling strategy to the problem's complexity. The binary Relevancy task utilized Qwen2:7B with strict logic gates. Conversely, to address the linguistic ambiguity of the Sentiment task, we employed Qwen2.5:7B-Instruct with a context-aware persona, prioritizing discourse cues to differentiate nuanced Indonesian sentiments\cite{yang_qwen2_2024}.
+\subsection{クラスタリングおけるラベル修正}
+We utilized uncorrected labels for training to avoid the negative effects of over-cleaning. For evaluation, a 15,000-sample Golden Standard was constructed efficiently using the \textit{Cluster Homogeneity Assumption} on Sentence BERT embeddings\cite{rigollet_generalization_2006}. By targeting manual review at inconsistent clusters, we identified and corrected \~2\% of labeling errors.
+\subsection{モデル訓練}
+Iterative data collection resulted in a severe negative-sentiment bias. We addressed this by applying \textit{Class-Weighted Cross-Entropy Loss} for the relevancy model and \textit{Focal Loss} for the sentiment model. The latter prevented overfitting to the majority ``Negative'' class, significantly improving the classification of hard-to-distinguish ``Neutral'' samples.
+\section{実験結果}
+\begin{tablehere}
+\noindent
+\parbox{\linewidth}{
+    \centering
+    \caption{関連性分離モデル評価結果}\label{tab:relevancy_metrics}
+    \resizebox{\linewidth}{!}{
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        クラス & 精度率 (Precision) & 再現率 (Recall) & F1スコア \\
+        \hline
+        無関係 (Irrelevant) & 96.13\% & 90.38\% & 93.17\% \\
+        \hline
+        関連有 (Relevant) & 92.93\% & 97.21\% & 95.02\% \\
+        \hline
+        マクロ平均 & 94.53\% & 93.79\% & 94.09\% \\
+        \hline
+        加重平均 & 94.32\% & 94.24\% & 94.22\% \\
+        \hline
+    \end{tabular}
+    }
+}%
+\end{tablehere}
+\begin{tablehere}
+\noindent
+\parbox{\linewidth}{
+    \centering
+    \caption{感情分析モデル評価結果}\label{tab:sentiment_metrics}
+    \resizebox{\linewidth}{!}{
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        クラス & 精度率 (Precision) & 再現率 (Recall) & F1スコア \\
+        \hline
+        負 (Negative) & 93.98\% & 85.80\% & 89.70\% \\
+        \hline
+        中立 (Neutral) & 63.03\% & 80.43\% & 70.67\% \\
+        \hline
+        正 (Positive) & 78.35\% & 82.14\% & 80.20\% \\
+        \hline
+        マクロ平均 & 78.45\% & 82.79\% & 80.19\% \\
+        \hline
+        加重平均 & 86.24\% & 84.38\% & 84.95\% \\
+        \hline
+    \end{tabular}
+    }
+}%
+\end{tablehere}
+{\small
+\bibliographystyle{plain}
+\bibliography{references.bib}
+}
+\end{multicols}
+\end{document}
