@@ -1,0 +1,97 @@
+\documentclass{jabstract}
+\usepackage{url}
+\graphicspath{{images/eps}}
+\jtitle{インドネシアにおける2025年軍事法案を巡る世論に関するX（旧Twitter）上の感情分析}
+\jauthor{クリスティアン　ハルジュノ}
+\jaffiliation{情報工学分野}
+\jteacher{本間宏利}
+\begin{document}
+\maketitle
+
+\begin{multicols}{2}
+\section{背景と目的}
+\vspace{-1em}
+2025年3月のインドネシア国軍法案（\textit{RUU TNI}）成立は, 現役軍人の文民職就任（第47条）による「軍の二重機能」復活の懸念から, 広範な社会的論争を招いた\cite{HRW2024}. 本研究は, X（旧Twitter）における\textit{\#TolakRUUTNI}等の抗議投\~25万件を対象とし, 法案成立前後の感情極性の推移と不満の主要因を定量的に明らかにする. 
+\vspace{-2em}
+\section{研究方法}
+\vspace{-1em}
+\subsection{ラベリング戦略とデータセット構築}
+\vspace{-1em}
+各タスク20,000サンプルのサブセットに対し, 問題の複雑さに応じた適応的なラベリング戦略を展開した. 二値分類である関連性タスクには厳密な論理ゲートを適用した\textit{Qwen2:7B}を, 感情分析タスクには文脈とインドネシア語の談話の手がかりを優先する\textit{Qwen2.5:7B-Instruct}を採用した\cite{yang_qwen2_2024}. 学習には過度な介入を避けるため未修正ラベルを用いた一方, 評価用にはSBERT埋め込み上の\textit{Cluster Homogeneity Assumption}\cite{rigollet_generalization_2006}を活用して15,000サンプルのゴールデンスタンダードを構築した. この際, 不整合なクラスタの手動レビューを通じて約2\%のラベルエラーを修正した. 
+
+\vspace{-2em}
+\subsection{モデル訓練}\label{section:modeltraining}
+\vspace{-1em}
+
+反復的なデータ収集の結果, 重度の否定的感情バイアスが生じた. これに対処するため, 関連性モデルには\textit{Class-Weighted Cross-Entropy Loss}を, 感情モデルには\textit{Focal Loss}を適用した. 後者は, 多数派である ``Negative'' クラスへの過学習を防ぎ, 判別が困難な ``Neutral'' サンプルの分類性能を大幅に向上させた.
+
+\vspace{-2em}
+\section{実験結果と議論}
+\vspace{-1em}
+
+表\ref{tab:relevancy_metrics}に示すように, 結果として得られた関連性分類モデルは94.22\%という比較的高いF1スコアを達成した. しかし, 両クラスにおける精度率と再現率の対比が観察され, これは偽陰性を最小限に抑えることで検索の網羅性を優先するモデルであることを示している.
+
+\begin{tablehere}
+    \caption{関連性分離モデル評価結果}\label{tab:relevancy_metrics}
+    \vspace{-0.5em}
+    \centering
+    \resizebox{0.99\linewidth}{!}{
+        \begin{tabular}{|l|c|c|c|}
+        \hline
+        クラス & 精度率 (Precision) & 再現率 (Recall) & F1スコア \\
+        \hline
+        無関係 (Irrelevant) & \textbf{96.13\%} & 90.38\% & 93.17\% \\
+        \hline
+        関連有 (Relevant) & 92.93\% & \textbf{97.21\%} & 95.02\% \\
+        \hline
+        マクロ平均 & 94.53\% & 93.79\% & 94.09\% \\
+        \hline
+        加重平均 & 94.32\% & 94.24\% & 94.22\% \\
+        \hline
+    \end{tabular}
+    }
+\end{tablehere}
+
+表\ref{tab:sentiment_metrics}は, Focal Lossが71\%の否定的クラスの不均衡へ有効に対処し, 8\%の少数派である肯定的クラスに対して82.14\%の再現率を達成したことを示している. しかし, 中立クラスにおける低い精度率 (63.03\%) と高い再現率 (80.43\%) の対比は, 同クラスが曖昧な入力に対する受け皿として機能していることを示唆している.
+
+\begin{tablehere}
+    \centering
+    \caption{時系列分析結果}\label{tab:sentiment_metrics}
+    \vspace{-0.5em}
+    \resizebox{0.99\linewidth}{!}{
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        クラス & 精度率 (Precision) & 再現率 (Recall) & F1スコア \\
+        \hline
+        負 (Negative) & 93.98\% & 85.80\% & 89.70\% \\
+        \hline
+        中立 (Neutral) & 63.03\% & 80.43\% & 70.67\% \\
+        \hline
+        正 (Positive) & 78.35\% & 82.14\% & 80.20\% \\
+        \hline
+        マクロ平均 & 78.45\% & 82.79\% & 80.19\% \\
+        \hline
+        加重平均 & 86.24\% & 84.38\% & 84.95\% \\
+        \hline
+    \end{tabular}
+    }
+\end{tablehere}
+
+図\ref{fig:general-overview}に見られるように, 抗議に至るまでのやく約2年間の期間における感情の推移は極め否定的であり, 抗議のピークに近づくにつれてその傾向は強まっている. しかし, 政府による公式発表の欠如や, \textit{``Peringatan Darurat''} あるいは \textit{``Indonesia Gelap''} といった他の抗議などの要因が, このイベントから大衆の関心を逸らせ, その結果, メイントピックに対する感情は大幅に弱まった.
+
+\begin{figurehere}
+    \centering
+      \includegraphics[width=\linewidth]{final_graph.eps}
+      \vspace{-2em}
+      \caption{研究方法の概念}\label{fig:general-overview}
+\end{figurehere}
+
+否定的の感情は, \ref{section:modeltraining}節で前述したバイアスによっても増幅されている. 今後の研究では, Twitterエンジンの制約に起因する内在的なバイアスの軽減を試みるべきである. 各クラス (感情および関連性分類器の双方) に対して個別のTwitter検索プロンプトを作成することで, バイアスを排除し, より正確な時系列分析が可能になるはずである.
+
+\vspace{-2em}
+{\footnotesize
+\bibliographystyle{plain}
+\bibliography{references.bib}
+}
+\end{multicols}
+\end{document}
