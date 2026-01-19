@@ -1,0 +1,209 @@
+\documentclass{jabstract}
+\usepackage{url}
+\graphicspath{{images/eps}}
+\jtitle{インドネシアにおける2025年軍事法案を巡る世論に関するX（旧Twitter）上の感情分析}
+\jauthor{クリスティアン　ハルジュノ}
+\jaffiliation{情報工学分野}
+\jteacher{本間宏利}
+
+\begin{document}
+\maketitle
+
+\begin{multicols}{2}
+  
+\section{はじめに}
+インドネシア国軍法案 (別名 Rancangan Undang-Undang Tentara Nasional Indonesia または RUU TNI)の改正は, 2025年3月20日に法として成立した際, 大きな論争を巻き起こした. 主な論点は特に第47条にあり, この条文は (武器を携帯する権利を持つ)現役軍人が非防衛分野の文民職に任命されることを規定しており, これは1998年以降の民主化改革を覆すものである. これは, 軍の二重機能 (Dwifungsi ABRIとしても知られる)\cite{HRW2024}の復活に関する重大な懸念を引き起こす. 本研究はインドネシアのソーシャルメディアのパラダイム, より具体的には, インドネシア全国の市民にとって公平な議論の場として機能したX (旧Twitter)に焦点を当てる. \#TolakRUUTNIなどのハッシュタグが, インドネシア政府への抗議の一形態として大規模に使用された\cite{CNN2024}.
+
+本研究は, X上での公開された言説の感情分析を行うことにより, RUU TNI 2025に対する国民感情を定量化し分析することを目的とする. 具体的な目的は, 法案が最初に提案された時から正式に署名された後の数ヶ月間にわたる感情の極性の分布を測定し, 国民の不満の主な要因を特定することである. この分析は, Xの検索エンジンから取得した20万件以上のツイートからなるコーパスを使用する.
+\section{先行研究}
+The sentiment analysis of social media data, particularly regarding this specific legislative issue in Indoensia has been extensively studied with degrees of success and different methodical approaches. One study by Ilham et al (2025) were performed against 400 tweets obtained with orange data mining operation which resulted in mostly negative sentiment of over 41.5\%\cite{Ilham2025}. Another study by Adwin et al (2025) performed sentiment analysis on a time series data between 1st and the 31st of March 2025 scraped from X using the web scraping technique. The sentiment analysis itself was performed using Support Vector Machine (SVM) and evaluated using the 5-Fold Cross Validation method which resulted in an average accuracy of 78.99\% and F1-Score of 83\%\cite{Nurhasananda_Akbar_2025} with 395 samples.
+Throughout previous researches found online, a common problem that was experienced by researches is the lack of quality and quantity which severely affected the accuracy of the used models or algorithms. This ``quality'' challenge is particularly pronounced in Indonesian social media data. The text retrieved is often extremely dirty which is characterized by informal slang, non-standard abbreviations, and most significantly, pervasive code-switching between Indoensian, English, and a local dialect (Javanese, Sundanese, Bataknese, etc) such as seen in table\ref{tab:code_switch_vertical}. These complex phenomena presents a significant hurdle for standard NLP models.
+
+\begin{tablehere}
+  \noindent
+  \parbox{\linewidth}{
+    \centering
+    \caption{コードスイッチングの分析（縦積み版）}\label{tab:code_switch_vertical}
+    \resizebox{\linewidth}{!}{
+      \begin{tabular}{|c|l|}
+        \hline
+        \multicolumn{2}{|c|}{セクション1} \\
+        \hline
+        言語 & ジャワ語 \\
+        \hline
+        原文 & Rapopo wes tak anggep durung rejekiku \\
+        \hline
+        日本語訳 & まあいい、まだ運じゃないと思っている \\
+        \hline
+        \multicolumn{2}{|c|}{セクション2} \\
+        \hline
+        言語 & インドネシア語 \\
+        \hline
+        原文 & duit 700 juta \\
+        \hline
+        日本語訳 & 7億ルピアのお金 \\
+        \hline
+        \multicolumn{2}{|c|}{セクション3} \\
+        \hline
+        言語 & ジャワ語 \\
+        \hline
+        原文 & nang ngarep moto ilang sak kolo \\
+        \hline
+        日本語訳 & 目の前で一瞬で消えた \\
+        \hline
+        \multicolumn{2}{|c|}{セクション4} \\
+        \hline
+        言語 & ジャワ語 \\
+        \hline
+        原文 & mergo aku digugah kon tangi \\
+        \hline
+        日本語訳 & なぜなら突然起こされたから \\
+        \hline
+      \end{tabular}
+    }
+  }%
+\end{tablehere}\\
+
+In this study, we will be implementing data mining technique in a limited environment such as X by utilizing TF-IDF to take full advantage of X's search engine as well as data sampling methods that enables us to train a model that generalizes better over noisy and low quality data.
+
+\section{研究方法}
+The general overview our established method can be seen in figure~\ref{fig:general-overview}.
+
+\begin{figurehere}
+    \centering
+    \includegraphics[width=\linewidth]{research_overview.eps}
+    \caption{研究方法の概念}\label{fig:general-overview}
+\end{figurehere}
+\subsection{データ収集}
+Data mining through X has been known to become much harder ever since the acquisition in 2022. Along with this acquisition, the free and open access to X's API (Application Programming Interface) became restricted since February 2023~\cite{twitter_api_free_access_2023}. X used to be a popular source of data amongst researchers due to its open access, ease of use, cheap resources, and most important of all: user generated data. 
+
+With the restriction of access to the official API, parsing data from the official database became much more expensive. In order to retrieve data, we will create a web crawler/parser that opens the search page with built search parameter and automatically scroll down the \textit{infinite timeline}\footnote{a feed that loads content continuously as you scroll, without requiring the user to click to the next page} while parsing the page source and uploading it to a self-hosted private database. This parser or crawler will be written in JavaScript (Node.Js)~\cite{nodejs} which takes advantage of the Puppeteer\footnote{A browser automation module} package~\cite{puppeteer}. 
+
+\subsection{Xの検索エンジン}\label{sec:x-search-enging}
+Similar to Google, X's search function implements some search notations that can be used to narrow down and retrieve specific data. Notations such as \texttt{``正確なフレーズ''} or \texttt{単語１ OR 単語２} can help to retrieve exact posts that contain or not contain those specific words~\cite{twitter_search_operators}. 
+
+\begin{verbatim}
+# 特定のユーザーから「気候変動」に関する画像付きの投稿を検索
+from:@username ``気候変動'' filter:media
+# 「AI」または「人工知能」を含む投稿を検索
+``AI'' OR ``人工知能''
+# 2025年1月1日以降の「地震」に関する投稿を検索
+``地震'' since:2025--01--01
+\end{verbatim}
+
+By combining multiple search operators, we can retrieve and construct specific datasets which targets specific topics, timeframes, which is essential for reproducible studies in social media analysis. 
+
+Despite a well developed search engine, due to the restricted access in the X API itself, utilizing these search operators reveals another significant challenge. As we are parsing through the web-based timeline itself, the recommendation algorithms which allows X to tailor the timeline specific to our habits, searching for a specific topic does not guarantee that the resulting data is clear from unrelated data. This is a massive challenge that may result in spending a lot of time just seperating between tweets (posts) that are related or unrelated to our topic.
+
+For that reason, we will be developing a pipeline to fully saturate our dataset with as much strong-signaled and relevant data as possible.
+\subsubsection{初回データ収集}
+As mentioned before in section\ref{sec:x-search-enging}, X's web-based search engine may often include irrelevant data in our results. To kick off the initial data gathering process, we first contructed a dictionary of words and hashtags that have some relevance to the topic of RUU TNI. This dictionary of words are gathered through some research and self consideration. For example we added the term ``demonstration'' due to the big demonstration that happened in relation with this topic. We also added popular hashtags such as \#TolakRUUTNI (\#軍事法案を反対) which is known to be the main tag used in discussions\cite{zuraida2023effectiveness}. We then constructed a dictionary of relevant keywords which can be seen in table \ref{tab:hashtag_translation}
+\begin{tablehere}
+  \noindent
+  \parbox{\linewidth}{
+    \centering
+    \caption{インドネシア軍法案関連のハッシュタグと言葉の日本語訳}\label{tab:hashtag_translation}
+    \resizebox{\linewidth}{!}{
+      \begin{tabular}{|c|c|}
+        \hline
+        ハッシュタグ・言葉 & 日本語翻訳 \\
+        \hline
+        \#TolakRUUTNI & \#RUUTNIに反対 \\
+        \hline
+        \#RUUTNI & \#RUUTNI（国軍法案） \\
+        \hline
+        RUU TNI & TNI法案（国軍法案） \\
+        \hline
+        demo mahasiswa & 学生デモ \\
+        \hline
+        unjuk rasa & 抗議デモ／デモ活動 \\
+        \hline
+        demonstrasi & デモ（demonstration） \\
+        \hline
+        \#DukungRUUTNI & \#RUUTNIを支持 \\
+        \hline
+        Dukung RUU TNI & TNI法案を支持する \\
+        \hline
+        \#RUUTNIPerkuatNKRI & \#RUUTNIはNKRI（統一国家）を強化する \\
+        \hline
+        \#GagalkanRUUTNI & \#RUUTNIを阻止しろ \\
+        \hline
+        \#CabutRUUTNI & \#RUUTNIを撤回しろ \\
+        \hline
+        \#PeringatanDarurat & \#緊急警告 \\
+        \hline
+        \#IndonesiaGelap & \#暗黒のインドネシア \\
+        \hline
+        \#TolakRevisiUUTNI & \#TNI法改正に反対 \\
+        \hline
+        \#TolakDwifungsiABRI & \#ABRIの二重機能に反対 \\
+        \hline
+        dwifungsi & 二重機能（軍と政治の両立機能） \\
+        \hline
+      \end{tabular}
+    }
+  }%
+\end{tablehere}
+However, certain keywords such as ``demonstration'' is very subtle because it can also refer to any other demonstrations that have nothing to do with RUU TNI. Using these X keywords, we then contruct a twitter search string and run an automated browser using Puppeteer to read every single post until the end of timeline (until no more posts are loaded). 
+
+As previously explained, this automated browser is programmed in JavaScript through the NodeJS engine which enables us to utilize Puppeteer, a browser automation module to simplify the data extracting process.
+
+Another significant hurdle we expect to see is the issue of rate limiting. Along with the retricted API access, extremely strict rate-limiting prevents a smooth data-mining operation. For that reason, the data miner is tuned to not parse more data than what is limited at a given time (which at the time of writing is \textasciitilde1000 posts per certain amount of time)
+
+\subsection{データ全処理}
+The parsed posts will be run through several stages of cleaning to normalize noise and code switching. 
+\begin{description}
+    \item[Unicode Normalization] Normalize Unicode characters, ensuring consistency in representation (e.g., combining characters with their base forms).
+    \item[Width Conversion] Convert full-width (zenkaku) digits and ASCII characters to their half-width (hankaku) equivalents.
+    \item[Newline Removal] Replaces literal newline and carriage return strings with a single space.
+    \item[URL normalization] Replaces all HTTP/HTTPS URLs with a special \verb|<url>| token.
+    \item[Mention Removal] Removes Twitter-style mentions.
+    \item[Retweet Prefix Removal] Strips the ``RT'' (retweet) indicator from the beginning of the text, case-insensitively.
+    \item[Number-Text Separation] Inserts a space between a 4-digit number and an immediately following letter, helping to separate elements like years from text.
+    \item[Quote Truncation] Removes all text from the first occurrence of the word ``kutipan'' (Indonesian for ``quote''), case-insensitively, to the end of the string.
+    \item[Unavailable URL Removal] Removes the specific placeholder string ``\verb|<url> ini tidak tersedia|''.
+    \item[Demojization] Converts emoji characters into their textual description.
+    \item[Character Repetition Reduction] Reduces any sequence of three or more identical characters down to just two (e.g., ``hellooo'' becomes ``hello'').
+    \item[Whitespace \& Case Normalization] Collapses all sequences of whitespace into a single space, removes any leading or trailing whitespace, and converts the entire string to lowercase.
+    \item[Final URL Token Removal] Removes the \verb|<url>| tokens that were added in the URL replacement step, effectively deleting all URLs from the text.
+\end{description}
+
+Other than regular expression cleaning, we will also normalize short form words and code switching through the use of available online dictionaries. Shortened words and expressions such as ``BTW'' is normalized to ``By the way'', ``Mager'' to ``Malas gerak'' (Lazy to move), etc. This process of normalizing shortened words is called \texttt{lexical normalization task} which utilizes open-source dictionaries (lexicons)\cite{han-baldwin-2011-lexical}. The dictionary that we will be using in this experiment is \texttt{nasalsabila/kamus-alay} avalable through GitHub\footnote{GitHub Link: \url{https://github.com/nasalsabila/kamus-alay}}\cite{8629151}.
+
+\subsection{関係性分離モデル}
+As previously discussed in section\ref{sec:x-search-enging}, the use of subtle words such as ``demonstration'' risks including irrelevant posts in the dataset. After hydrating the database with the initial round of data mining, we will be training a model that is able to distuinguish between a post that relates to the RUU TNI paradigm and a post that does not.
+
+A big challenge in seperating between relevant and irrelevant data is the noisiness and dirtiness of Indonesian twitter data. Within our previously created corpora of seemingly related keywords, we have included hashtags which is known to be used for discussion of the RUU TNI topic as seed in table~\ref{tab:hashtag_translation}. Upon retrieval of text data, we encounter posts that included the hashtag but contain discussions of something completely irrelevant to the main topic. In this case, popular hashtags are being used as an engagement tool to raise the amount of views as can be seen in figure~\ref{fig:tagged-irrelevant-data}.\\
+
+\begin{figurehere}
+  \centering
+  \includegraphics[width=0.9\linewidth]{hashtag_unrelated.eps}
+  \caption{タッグ含み無関係データ(通訳版)}\label{fig:tagged-irrelevant-data}
+\end{figurehere}
+
+Due to amount of unrelated samples within the collected data, we will be training a model based on \texttt{indolem/indobertweet} which is a bert-based model trained on a massive corpora of Indonesian twitter data~\cite{koto2021indobertweet}. However, the noisiness of the underlying dataset itself means we will need to prepare a large amount of data to be sampled, cleaned, labeled, and balanced in order to achieve a model that generalizes well over unseen data~\cite{mazumder2023dataperf}. 
+
+\subsection{ラベル付け作業の削減}
+In order to reduce the amount of labeling needs, we will be implementing a density based clustering and subsampling method to remove sample noise that may affect the general performance of the fine-tuned model. The usage of clustering to produce higher quality samples has been known in the machine learning paradigm for a long time. Most notable method utilized UMAP (Uniform Manifold Approximation and Projection for Dimension Reduction)~\cite{mcinnes2018umap} and KMeans~\cite{macqueen1967some}.
+
+However, KMeans works best with clusters that have globular shapes. 
+
+
+\subsection{特徴単語を抽出}
+
+\subsection{第2回データ収集}
+\subsection{分析手法}
+\section{期待される結果と貢献}
+\section{行った事}
+\section{結論と今後の課題}
+
+{\small
+\bibliographystyle{plain}
+\bibliography{references.bib}
+}
+
+
+
+\end{multicols}
+
+\end{document}

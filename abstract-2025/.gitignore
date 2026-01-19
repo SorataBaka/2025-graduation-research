@@ -1,0 +1,48 @@
+### Core LaTeX Compilation Files ###
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.dvi
+*.nav
+*.snm
+*.vrb
+
+### Bibliography & Indices ###
+*.bbl
+*.blg
+*.bcf
+*.xml
+*.idx
+*.ind
+*.ilg
+*.glg
+*.glo
+*.gls
+*.ist
+*.lof
+*.lot
+
+### PDF Output (Optional) ###
+# Uncomment the line below if you do NOT want to track PDFs
+# *.pdf
+
+### Editor/OS Specific ###
+.DS_Store
+thumbs.db
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*~
+
+### Image Conversion/Cache ###
+*.dpth
+*.md5
+*.auxlock
+
+*.eps

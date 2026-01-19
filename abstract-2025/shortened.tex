@@ -1,0 +1,73 @@
+\documentclass{jabstract}
+\usepackage{url}
+\usepackage{titlesec}
+
+\titlespacing*{\section}
+{0pt}{1.5ex plus 1ex minus .2ex}{0.9ex plus .2ex}
+
+\titlespacing*{\subsection}
+{0pt}{1.25ex plus 1ex minus .2ex}{0ex plus .2ex}
+
+\titlespacing*{\subsubsection}
+{0pt}{1ex plus 0.5ex minus .2ex}{0.4ex plus .2ex}
+
+\graphicspath{{images/eps}}
+\jtitle{インドネシアにおける2025年軍事法案を巡る世論に関するX（旧Twitter）上の感情分析}
+\jauthor{クリスティアン　ハルジュノ}
+\jaffiliation{情報工学分野}
+\jteacher{本間宏利}
+
+\begin{document}
+\maketitle
+
+\begin{multicols}{2}
+\section{はじめに}
+インドネシア国軍法案（RUU TNI）の改正は2025年3月20日に成立し, 第47条をめぐって大きな論争を招いた. この条文は現役軍人の文民職への任命を認めており, 1998年以降の民主化改革を逆行させるとして批判を受けた. これにより, 軍の二重機能（Dwifungsi ABRI）の復活が懸念されている\cite{HRW2024}. 
+本研究は, X（旧Twitter）上での議論に焦点を当て, \#TolakRUUTNIなどの抗議的ハッシュタグを通じた国民感情を分析する. 具体的には, 法案提案から成立後までの期間における感情の極性分布を測定し, 不満の主要因を特定する. 分析には, Xの検索エンジンから収集した約20万件のツイートを用いる. 
+\section{先行研究}
+ソーシャルメディアデータの感情分析, 特にインドネシアにおける本法案問題は, さまざまな手法と一定の成果をもって研究されてきた. Ilhamら（2025）はOrange Data Miningを用いて400件のツイートを分析し, 41.5\%以上がネガティブ感情を示した. 一方, Adwinら（2025）は2025年3月1日～31日の投稿をWebスクレイピングで収集し, SVMによる感情分類を実施, 5分割交差検証で平均精度78.99\%, F1スコア83\%を得た. これら先行研究に共通する課題は, データの質と量の不足によるモデル精度の低下である. 
+\section{研究方法}
+本研究では, 特定語句を検索するためにXの検索エンジンを利用する自作Webクローラを用いる~\cite{twitter_search_operators}. クローラは新規投稿を自動取得・解析し, データベースに保存する. ノイズ除去と関連データ抽出には\texttt{indobertweet}を微調整したモデルを用い, さらにCountVectorizerによる重要語抽出を行い, 再検索に活用する. これにより, より多くの関連データを効率的に収集できる. 
+十分なデータ収集後, 3値の感情スコア（-1, 0, 1）を用いた感情分析モデルを学習し, 時間区間ごとのスコアリングを実施する. 本研究の全体的な処理手順を図~\ref{fig:general-overview} に示す. 
+
+\begin{figurehere}
+  \centering
+    \includegraphics[width=\linewidth]{research_overview.eps}
+    \caption{研究方法の概念}\label{fig:general-overview}
+\end{figurehere}
+
+\section{行った事}
+本研究では, Puppeteer\footnote{\url{https://github.com/puppeteer/puppeteer}}を用いてNode.js上にWebクローラ\footnote{\url{https://github.com/SorataBaka/2025-graduation-research/tree/main/twitter-parse-v2}}を実装し, 関連・非関連を含む約20万件のサンプルを取得した. ノイズの多いデータに対する性能向上を目的に, サンプリング前の意味的クラスタリング手法を検討した. この副研究は2025年北海道ALU\footnote{\url{https://sites.google.com/view/hokkaidonlp/lau}}年次大会で発表され, MDPI特別号に掲載予定である. 関連性分類モデルの初期学習は, LLaMa3:8Bでラベル付けした20000件のサンプルを用いて実施し, その結果を表\ref{tab:initial-model-performance}に示す. 
+\begin{tablehere}
+  \noindent
+  \parbox{\linewidth}{
+    \centering
+    \caption{関連性分離モデル評価結果}\label{tab:initial-model-performance}
+    \resizebox{\linewidth}{!}{
+      \begin{tabular}{|l|c|c|c|}
+        \hline
+        クラス & 精度率 (Precision) & 再現率 (Recall) & F1スコア \\
+        \hline
+        マクロ平均 & 88.04\% & 88.32\% & 88.16\% \\
+        \hline
+        加重平均 & 88.39\% & 88.29\% & 88.32\% \\
+        \hline
+      \end{tabular}
+    }
+  }%
+\end{tablehere}
+\section{今後の課題}
+\begin{enumerate}
+\item 関連サンプルを抽出し, CountVectorizerを用いて重要なキーワードを取得する. 得られた重要キーワードを利用することで, Xの検索エンジンを再利用し, より高品質で高シグナルなデータを収集して分析に用いることができる.
+\item 感情分析モデルを学習させる.
+\end{enumerate}
+{\small
+\bibliographystyle{plain}
+\bibliography{references.bib}
+}
+
+
+
+\end{multicols}
+
+\end{document}
