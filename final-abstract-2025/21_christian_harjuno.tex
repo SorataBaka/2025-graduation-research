@@ -11,22 +11,22 @@
 \begin{multicols}{2}
 \section{背景と目的}
 \vspace{-1em}
-2025年3月のインドネシア国軍法案（\textit{RUU TNI}）成立は, 現役軍人の文民職就任（第47条）による「軍の二重機能」復活の懸念から, 広範な社会的論争を招いた\cite{HRW2024}. 本研究は, X（旧Twitter）における\textit{\#TolakRUUTNI}等の抗議投約25万件を対象とし, 法案成立前後の感情極性の推移と不満の主要因を定量的に明らかにする. 
+2025年3月のインドネシア国軍法案（\textit{RUU TNI}）成立は, 現役軍人の文民職就任（第47条）による「軍の二重機能」復活の懸念から, 広範な社会的論争を招いた\cite{hrw2025indonesia}. 本研究は, X（旧Twitter）における\textit{\#TolakRUUTNI}等の抗議投約25万件を対象とし, 法案成立前後の感情極性の推移と不満の主要因を定量的に明らかにする. 
 \vspace{-2em}
 \section{研究方法}
 \vspace{-1em}
 \subsection{ラベリング戦略とデータセット構築}
 \vspace{-1em}
-各タスク20,000サンプルのサブセットに対し, 問題の複雑さに応じた適応的なラベリング戦略を展開した. 二値分類である関連性タスクには厳密な論理ゲートを適用した\textit{Qwen2:7B}を, 感情分析タスクには文脈とインドネシア語の談話の手がかりを優先する\textit{Qwen2.5:7B-Instruct}を採用した\cite{yang_qwen2_2024}. 学習には過度な介入を避けるため未修正ラベルを用いた一方, 評価用にはSBERT埋め込み上の\textit{Cluster Homogeneity Assumption}\cite{rigollet_generalization_2006}を活用して15,000サンプルのゴールデンスタンダードを構築した. この際, 不整合なクラスタの手動レビューを通じて約2\%のラベル誤差を修正した. 
+各タスク20,000サンプルのサブセットに対し, 問題の複雑さに応じた適応的なラベリング戦略を展開した. 二値分類である関連性タスクには厳密な論理ゲートを適用した\textit{Qwen2:7B}を, 感情分析タスクには文脈とインドネシア語の談話の手がかりを優先する\textit{Qwen2.5:7B-Instruct}を採用した\cite{qwen25}. 学習には過度な介入を避けるため未修正ラベルを用いた一方, 評価用にはSBERT埋め込み上の\textit{Cluster Homogeneity Assumption}\cite{rigollet2006}を活用して15,000サンプルのゴールデンスタンダードを構築した. この際, 不整合なクラスタの手動レビューを通じて約2\%のラベル誤差を修正した. 
 
 \vspace{-2em}
 \subsection{モデル訓練}\label{section:modeltraining}
 \vspace{-1em}
 
-反復的なデータ収集の結果, 重度の否定的感情バイアスが生じた. これに対処するため, 関連性モデルには\textit{Class-Weighted Cross-Entropy Loss}を, 感情モデルには\textit{Focal Loss}を適用した. 後者は, 多数派である ``Negative'' クラスへの過学習を防ぎ, 判別が困難な ``Neutral'' サンプルの分類性能を大幅に向上させた.
+反復的なデータ収集の結果, 重度の否定的感情バイアスが生じた. これに対処するため, 関連性モデルには\textit{Class-Weighted Cross-Entropy Loss}を, 感情モデルには\textit{Focal Loss}を適用した. 後者は, 多数派である否定的クラスへの過学習を防ぎ, 判別が困難な中立的サンプルの分類性能を大幅に向上させた.
 
 \vspace{-2em}
-\section{実験結果と議論}
+\section{実験結果と考察}
 \vspace{-1em}
 
 表\ref{tab:relevancy_metrics}に示すように, 結果として得られた関連性分類モデルは94.22\%という比較的高いF1スコアを達成した. しかし, 両クラスにおける精度率と再現率の対比が観察され, これは偽陰性を最小限に抑えることで検索の網羅性を優先するモデルであることを示している.
@@ -77,7 +77,7 @@
     }
 \end{tablehere}
 
-図\ref{fig:general-overview}に見られるように, 抗議に至るまでのやく約2年間の期間における感情の推移は極め否定的であり, 抗議のピークに近づくにつれてその傾向は強まっている. しかし, 政府による公式発表の欠如や, \textit{``Peringatan Darurat''} あるいは \textit{``Indonesia Gelap''} といった他の抗議などの要因が, このイベントから大衆の関心を逸らせ, その結果, メイントピックに対する感情は大幅に弱まった.
+図\ref{fig:general-overview}に見られるように, 抗議に至るまでの約2年間の期間における感情の推移は極め否定的であり, 抗議のピークに近づくにつれてその傾向は強まっている. しかし, 政府による公式発表の欠如や, \textit{``Peringatan Darurat''} あるいは \textit{``Indonesia Gelap''} といった他の抗議などの要因が, このイベントから大衆の関心を逸らせ, その結果, メイントピックに対する感情は大幅に弱まった.
 
 \begin{figurehere}
     \centering
@@ -90,8 +90,23 @@
 
 \vspace{-2em}
 {\footnotesize
-\bibliographystyle{plain}
-\bibliography{references.bib}
+\begin{thebibliography}{99}
+\vspace{-1em}
+
+\bibitem{hrw2025indonesia}
+Human Rights Watch, ``Indonesia: Proposed Military Law Amendments Threaten Rights'',
+Human Rights Watch, Mar. 19, 2025.
+
+\bibitem{rigollet2006}
+P. Rigollet, ``Generalization error bounds in semi-supervised classification under the cluster assumption'',
+Cornell University, arXiv:math/0604233 [math.ST], 2006.
+
+\bibitem{qwen25}
+A. Yang \textit{et al.}, ``Qwen2.5 Technical Report'',
+Cornell University, arXiv:2412.15115 [cs.CL], 2025.
+
+\end{thebibliography}
 }
+
 \end{multicols}
 \end{document}
